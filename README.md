@@ -30,3 +30,14 @@ The application uses SQLite and initializes schema/data on startup.
 - Assignment tracking page
 
 TODO: add more details here.
+
+## Playwright validation screenshots
+
+### Dashboard
+![Dashboard](https://github.com/user-attachments/assets/1a4ecc17-7fca-4d28-a37c-477720c8553f)
+
+### Assets
+![Assets](https://github.com/user-attachments/assets/9d54145c-2ba2-4782-b3ec-18b484f7d1bf)
+
+### Assignments
+![Assignments](https://github.com/user-attachments/assets/2d86d3ad-074a-42a6-8fbc-1efc94101ce9)
