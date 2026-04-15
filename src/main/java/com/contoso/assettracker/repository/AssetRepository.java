@@ -67,6 +67,11 @@ public class AssetRepository {
         return count == null ? 0 : count;
     }
 
+    public List<Asset> findByEmployeeId(Long employeeId) {
+        String sql = "SELECT a.* FROM assets a INNER JOIN assignment_history ah ON a.asset_id = ah.asset_id WHERE ah.employee_id = ? AND ah.returned_date IS NULL ORDER BY a.asset_tag";
+        return jdbcTemplate.query(sql, rowMapper, employeeId);
+    }
+
     public long countByStatus(String status) {
         Long count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM assets WHERE status = ?", Long.class, status);
         return count == null ? 0 : count;

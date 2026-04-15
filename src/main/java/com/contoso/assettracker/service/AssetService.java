@@ -29,4 +29,5 @@ public class AssetService {
 
     public long countAll() { return assetRepository.countAll(); }
     public long countByStatus(String status) { return assetRepository.countByStatus(status); }
+    public List<Asset> findByEmployeeId(Long employeeId) { return assetRepository.findByEmployeeId(employeeId); }
 }

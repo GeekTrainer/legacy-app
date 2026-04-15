@@ -42,6 +42,27 @@
     </div>
 
     <a th:href="@{/employees}" class="btn btn-default"><span class="glyphicon glyphicon-arrow-left"></span> Back to Employees</a>
+
+    <div class="panel panel-info top-space">
+        <div class="panel-heading"><span class="glyphicon glyphicon-briefcase"></span> Currently Assigned Assets</div>
+        <div th:if="${assignedAssets != null and !assignedAssets.isEmpty()}">
+            <table class="table table-striped table-hover">
+                <thead><tr><th>Asset Tag</th><th>Type</th><th>Manufacturer</th><th>Model</th><th>Status</th></tr></thead>
+                <tbody>
+                    <tr th:each="a : ${assignedAssets}">
+                        <td><a th:href="@{/assets/detail(id=${a.assetId})}" th:text="${a.assetTag}"></a></td>
+                        <td th:text="${a.assetType}"></td>
+                        <td th:text="${a.manufacturer}"></td>
+                        <td th:text="${a.model}"></td>
+                        <td><span class="label label-primary" th:text="${a.status}"></span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div th:if="${assignedAssets == null or assignedAssets.isEmpty()}" class="panel-body">
+            <p class="text-muted">No assets currently assigned to this employee.</p>
+        </div>
+    </div>
 </div>
 
 <div th:replace="layout :: footer"></div>
