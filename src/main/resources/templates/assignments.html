@@ -2,43 +2,102 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Assignments</title>
+    <title>Assignments — AssetTrack</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
-<div class="container">
-    <h1>Assignments</h1>
-    <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
-    <form method="post" action="/assignments" class="form-inline">
-        <select name="assetId" class="form-control">
-            <option th:each="a : ${assets}" th:value="${a.assetId}" th:text="${a.assetTag + ' (' + a.status + ')'}"></option>
-        </select>
-        <select name="employeeId" class="form-control">
-            <option th:each="e : ${employees}" th:value="${e.employeeId}" th:text="${e.firstName + ' ' + e.lastName}"></option>
-        </select>
-        <input name="assignedDate" class="form-control" placeholder="YYYY-MM-DD">
-        <input name="assignedBy" class="form-control" placeholder="Assigned by">
-        <button class="btn btn-primary" type="submit">Assign</button>
-    </form>
+<div th:replace="layout :: navbar('assignments')"></div>
 
-    <table class="table table-bordered top-space">
-        <thead><tr><th>ID</th><th>Asset</th><th>Employee</th><th>Assigned</th><th>Returned</th><th>Action</th></tr></thead>
-        <tbody>
-            <tr th:each="as : ${assignments}">
-                <td th:text="${as.assignmentId}"></td>
-                <td th:text="${as.assetId}"></td>
-                <td th:text="${as.employeeId}"></td>
-                <td th:text="${as.assignedDate}"></td>
-                <td th:text="${as.returnedDate}"></td>
-                <td>
-                    <form th:if="${as.returnedDate == null}" method="post" action="/assignments/return">
-                        <input type="hidden" name="assignmentId" th:value="${as.assignmentId}">
-                        <button class="btn btn-xs btn-default" type="submit">Return</button>
-                    </form>
-                </td>
-            </tr>
-        </tbody>
-    </table>
+<div class="container">
+    <ol class="breadcrumb">
+        <li><a th:href="@{/}">Home</a></li>
+        <li class="active">Assignments</li>
+    </ol>
+
+    <div class="page-header">
+        <h1><span class="glyphicon glyphicon-transfer"></span> Asset Assignments</h1>
+    </div>
+
+    <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
+
+    <div class="panel panel-primary">
+        <div class="panel-heading"><span class="glyphicon glyphicon-plus"></span> Assign Asset to Employee</div>
+        <div class="panel-body">
+            <form method="post" action="/assignments" class="form-horizontal">
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="assetSelect">Asset</label>
+                    <div class="col-sm-10">
+                        <select id="assetSelect" name="assetId" class="form-control">
+                            <option value="" disabled selected>-- Select an asset --</option>
+                            <option th:each="a : ${assets}" th:value="${a.assetId}" th:text="${a.assetTag + ' — ' + a.assetType + ' (' + a.status + ')'}"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="employeeSelect">Employee</label>
+                    <div class="col-sm-10">
+                        <select id="employeeSelect" name="employeeId" class="form-control">
+                            <option value="" disabled selected>-- Select an employee --</option>
+                            <option th:each="e : ${employees}" th:value="${e.employeeId}" th:text="${e.firstName + ' ' + e.lastName + ' — ' + e.department}"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="col-sm-2 control-label" for="assignedDate">Date</label>
+                    <div class="col-sm-4">
+                        <input id="assignedDate" name="assignedDate" class="form-control" placeholder="YYYY-MM-DD">
+                    </div>
+                    <label class="col-sm-2 control-label" for="assignedBy">Assigned By</label>
+                    <div class="col-sm-4">
+                        <input id="assignedBy" name="assignedBy" class="form-control" placeholder="e.g. it-admin">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-offset-2 col-sm-10">
+                        <button class="btn btn-primary" type="submit"><span class="glyphicon glyphicon-ok"></span> Assign</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="panel panel-default">
+        <div class="panel-heading"><span class="glyphicon glyphicon-list"></span> Assignment History</div>
+        <table class="table table-bordered table-hover">
+            <thead><tr><th>#</th><th>Asset</th><th>Employee</th><th>Assigned</th><th>Returned</th><th>Assigned By</th><th>Action</th></tr></thead>
+            <tbody>
+                <tr th:each="as : ${assignments}" th:classappend="${as.returnedDate == null} ? 'info'">
+                    <td th:text="${as.assignmentId}"></td>
+                    <td>
+                        <span th:each="a : ${assets}" th:if="${a.assetId == as.assetId}">
+                            <a th:href="@{/assets/detail(id=${a.assetId})}" th:text="${a.assetTag}"></a>
+                        </span>
+                    </td>
+                    <td>
+                        <span th:each="e : ${employees}" th:if="${e.employeeId == as.employeeId}">
+                            <a th:href="@{/employees/detail(id=${e.employeeId})}" th:text="${e.firstName + ' ' + e.lastName}"></a>
+                        </span>
+                    </td>
+                    <td th:text="${as.assignedDate}"></td>
+                    <td>
+                        <span th:if="${as.returnedDate != null}" th:text="${as.returnedDate}"></span>
+                        <span th:if="${as.returnedDate == null}" class="label label-warning">Active</span>
+                    </td>
+                    <td th:text="${as.assignedBy}"></td>
+                    <td>
+                        <form th:if="${as.returnedDate == null}" method="post" action="/assignments/return" style="display:inline">
+                            <input type="hidden" name="assignmentId" th:value="${as.assignmentId}">
+                            <button class="btn btn-xs btn-warning" type="submit"><span class="glyphicon glyphicon-log-out"></span> Return</button>
+                        </form>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
+
+<div th:replace="layout :: footer"></div>
+<div th:replace="layout :: scripts"></div>
 </body>
 </html>

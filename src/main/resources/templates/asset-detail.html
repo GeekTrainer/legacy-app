@@ -2,20 +2,60 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Asset Detail</title>
+    <title>Asset Detail — AssetTrack</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
+<div th:replace="layout :: navbar('assets')"></div>
+
 <div class="container" th:if="${asset != null}">
-    <h1 th:text="${asset.assetTag}"></h1>
-    <ul class="list-group">
-        <li class="list-group-item"><strong>Type:</strong> <span th:text="${asset.assetType}"></span></li>
-        <li class="list-group-item"><strong>Manufacturer:</strong> <span th:text="${asset.manufacturer}"></span></li>
-        <li class="list-group-item"><strong>Model:</strong> <span th:text="${asset.model}"></span></li>
-        <li class="list-group-item"><strong>Serial:</strong> <span th:text="${asset.serialNumber}"></span></li>
-        <li class="list-group-item"><strong>Status:</strong> <span th:text="${asset.status}"></span></li>
-    </ul>
-    <a href="/assets" class="btn btn-default">Back</a>
+    <ol class="breadcrumb">
+        <li><a th:href="@{/}">Home</a></li>
+        <li><a th:href="@{/assets}">Assets</a></li>
+        <li class="active" th:text="${asset.assetTag}"></li>
+    </ol>
+
+    <div class="page-header">
+        <h1><span class="glyphicon glyphicon-briefcase"></span> <span th:text="${asset.assetTag}"></span>
+            <small th:text="${asset.assetType}"></small>
+        </h1>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-6">
+            <div class="panel panel-default">
+                <div class="panel-heading"><span class="glyphicon glyphicon-info-sign"></span> Asset Information</div>
+                <table class="table">
+                    <tr><th>Asset Tag</th><td th:text="${asset.assetTag}"></td></tr>
+                    <tr><th>Type</th><td th:text="${asset.assetType}"></td></tr>
+                    <tr><th>Manufacturer</th><td th:text="${asset.manufacturer}"></td></tr>
+                    <tr><th>Model</th><td th:text="${asset.model}"></td></tr>
+                    <tr><th>Serial Number</th><td th:text="${asset.serialNumber} ?: 'N/A'"></td></tr>
+                </table>
+            </div>
+        </div>
+        <div class="col-sm-6">
+            <div class="panel panel-default">
+                <div class="panel-heading"><span class="glyphicon glyphicon-calendar"></span> Status &amp; Dates</div>
+                <table class="table">
+                    <tr><th>Status</th><td>
+                        <span class="label"
+                              th:classappend="${asset.status == 'available'} ? 'label-success' : (${asset.status == 'assigned'} ? 'label-primary' : (${asset.status == 'retired'} ? 'label-default' : 'label-danger'))"
+                              th:text="${asset.status}"></span>
+                    </td></tr>
+                    <tr><th>Purchase Date</th><td th:text="${asset.purchaseDate} ?: 'N/A'"></td></tr>
+                    <tr><th>Warranty Expiry</th><td th:text="${asset.warrantyExpiry} ?: 'N/A'"></td></tr>
+                    <tr th:if="${asset.notes != null and !asset.notes.isEmpty()}"><th>Notes</th><td th:text="${asset.notes}"></td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <a th:href="@{/assets}" class="btn btn-default"><span class="glyphicon glyphicon-arrow-left"></span> Back to Assets</a>
 </div>
+
+<div th:replace="layout :: footer"></div>
+<div th:replace="layout :: scripts"></div>
 </body>
 </html>

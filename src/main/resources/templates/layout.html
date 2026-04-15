@@ -3,24 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>AssetTrack</title>
+    <title>AssetTrack — Contoso Industries</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
     <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
+
+<div th:fragment="navbar(activePage)">
 <nav class="navbar navbar-inverse">
     <div class="container">
-        <div class="navbar-header"><a class="navbar-brand" th:href="@{/}">AssetTrack</a></div>
-        <ul class="nav navbar-nav">
-            <li><a th:href="@{/assets}">Assets</a></li>
-            <li><a th:href="@{/employees}">Employees</a></li>
-            <li><a th:href="@{/assignments}">Assignments</a></li>
-        </ul>
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#main-nav">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" th:href="@{/}">
+                <span class="glyphicon glyphicon-hdd"></span> AssetTrack
+            </a>
+        </div>
+        <div class="collapse navbar-collapse" id="main-nav">
+            <ul class="nav navbar-nav">
+                <li th:classappend="${activePage == 'dashboard'} ? 'active'"><a th:href="@{/}"><span class="glyphicon glyphicon-dashboard"></span> Dashboard</a></li>
+                <li th:classappend="${activePage == 'assets'} ? 'active'"><a th:href="@{/assets}"><span class="glyphicon glyphicon-briefcase"></span> Assets</a></li>
+                <li th:classappend="${activePage == 'employees'} ? 'active'"><a th:href="@{/employees}"><span class="glyphicon glyphicon-user"></span> Employees</a></li>
+                <li th:classappend="${activePage == 'assignments'} ? 'active'"><a th:href="@{/assignments}"><span class="glyphicon glyphicon-transfer"></span> Assignments</a></li>
+            </ul>
+            <p class="navbar-text navbar-right">Contoso Industries</p>
+        </div>
     </div>
 </nav>
-<div class="container" th:fragment="content"></div>
+</div>
+
+<div th:fragment="footer">
+<footer class="footer">
+    <div class="container">
+        <p class="text-muted">&copy; 2017 Contoso Industries &mdash; Internal Use Only | AssetTrack v1.0</p>
+    </div>
+</footer>
+</div>
+
+<div th:fragment="scripts">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfFuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 <script th:src="@{/js/app.js}"></script>
+</div>
+
 </body>
 </html>

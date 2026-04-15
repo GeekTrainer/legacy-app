@@ -2,63 +2,141 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Assets</title>
+    <title>Assets — AssetTrack</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
     <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
+<div th:replace="layout :: navbar('assets')"></div>
+
 <div class="container">
-    <h1>Assets</h1>
-    <form id="asset-filter-form" method="get" action="/assets" class="form-inline">
-        <label>Type</label>
-        <select name="type" class="form-control">
-            <option value="">All</option>
-            <option value="Laptop" th:selected="${selectedType == 'Laptop'}">Laptop</option>
-            <option value="Monitor" th:selected="${selectedType == 'Monitor'}">Monitor</option>
-            <option value="Keyboard" th:selected="${selectedType == 'Keyboard'}">Keyboard</option>
-            <option value="Phone" th:selected="${selectedType == 'Phone'}">Phone</option>
-            <option value="Keycard/Badge" th:selected="${selectedType == 'Keycard/Badge'}">Keycard/Badge</option>
-            <option value="Docking Station" th:selected="${selectedType == 'Docking Station'}">Docking Station</option>
-        </select>
-        <label>Status</label>
-        <select name="status" class="form-control">
-            <option value="">All</option>
-            <option value="available" th:selected="${selectedStatus == 'available'}">available</option>
-            <option value="assigned" th:selected="${selectedStatus == 'assigned'}">assigned</option>
-            <option value="retired" th:selected="${selectedStatus == 'retired'}">retired</option>
-            <option value="lost" th:selected="${selectedStatus == 'lost'}">lost</option>
-        </select>
-        <button class="btn btn-default" type="submit">Filter</button>
-    </form>
+    <ol class="breadcrumb">
+        <li><a th:href="@{/}">Home</a></li>
+        <li class="active">Assets</li>
+    </ol>
 
-    <table class="table table-striped">
-        <thead><tr><th>ID</th><th>Tag</th><th>Type</th><th>Manufacturer</th><th>Status</th></tr></thead>
-        <tbody>
-            <tr th:each="a : ${assets}">
-                <td th:text="${a.assetId}"></td>
-                <td><a th:href="@{/assets/detail(id=${a.assetId})}" th:text="${a.assetTag}"></a></td>
-                <td th:text="${a.assetType}"></td>
-                <td th:text="${a.manufacturer}"></td>
-                <td th:text="${a.status}"></td>
-            </tr>
-        </tbody>
-    </table>
+    <div class="page-header">
+        <h1><span class="glyphicon glyphicon-briefcase"></span> Assets</h1>
+    </div>
 
-    <h3>Create Asset</h3>
-    <form method="post" action="/assets">
-        <div class="form-group"><input class="form-control" name="assetTag" placeholder="Asset Tag"></div>
-        <div class="form-group"><input class="form-control" name="assetType" placeholder="Asset Type"></div>
-        <div class="form-group"><input class="form-control" name="manufacturer" placeholder="Manufacturer"></div>
-        <div class="form-group"><input class="form-control" name="model" placeholder="Model"></div>
-        <div class="form-group"><input class="form-control" name="serialNumber" placeholder="Serial Number"></div>
-        <div class="form-group"><input class="form-control" name="purchaseDate" placeholder="Purchase Date (YYYY-MM-DD)"></div>
-        <div class="form-group"><input class="form-control" name="warrantyExpiry" placeholder="Warranty Expiry (YYYY-MM-DD)"></div>
-        <div class="form-group"><select class="form-control" name="status"><option>available</option><option>assigned</option><option>retired</option><option>lost</option></select></div>
-        <div class="form-group"><textarea class="form-control" name="notes" placeholder="Notes"></textarea></div>
-        <button class="btn btn-primary" type="submit">Create</button>
-    </form>
+    <div class="panel panel-default">
+        <div class="panel-heading"><span class="glyphicon glyphicon-filter"></span> Filter Assets</div>
+        <div class="panel-body">
+            <form id="asset-filter-form" method="get" action="/assets" class="form-inline">
+                <div class="form-group">
+                    <label for="filter-type">Type</label>
+                    <select id="filter-type" name="type" class="form-control">
+                        <option value="">All Types</option>
+                        <option value="Laptop" th:selected="${selectedType == 'Laptop'}">Laptop</option>
+                        <option value="Monitor" th:selected="${selectedType == 'Monitor'}">Monitor</option>
+                        <option value="Keyboard" th:selected="${selectedType == 'Keyboard'}">Keyboard</option>
+                        <option value="Phone" th:selected="${selectedType == 'Phone'}">Phone</option>
+                        <option value="Keycard/Badge" th:selected="${selectedType == 'Keycard/Badge'}">Keycard/Badge</option>
+                        <option value="Docking Station" th:selected="${selectedType == 'Docking Station'}">Docking Station</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="filter-status">Status</label>
+                    <select id="filter-status" name="status" class="form-control">
+                        <option value="">All Statuses</option>
+                        <option value="available" th:selected="${selectedStatus == 'available'}">Available</option>
+                        <option value="assigned" th:selected="${selectedStatus == 'assigned'}">Assigned</option>
+                        <option value="retired" th:selected="${selectedStatus == 'retired'}">Retired</option>
+                        <option value="lost" th:selected="${selectedStatus == 'lost'}">Lost</option>
+                    </select>
+                </div>
+                <button class="btn btn-default" type="submit"><span class="glyphicon glyphicon-search"></span> Filter</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <span class="glyphicon glyphicon-list"></span> Asset Inventory
+            <button class="btn btn-success btn-xs pull-right" type="button" data-toggle="collapse" data-target="#create-asset-form">
+                <span class="glyphicon glyphicon-plus"></span> Add New Asset
+            </button>
+            <div class="clearfix"></div>
+        </div>
+        <table class="table table-striped table-hover">
+            <thead><tr><th>#</th><th>Asset Tag</th><th>Type</th><th>Manufacturer</th><th>Model</th><th>Status</th></tr></thead>
+            <tbody>
+                <tr th:each="a : ${assets}">
+                    <td th:text="${a.assetId}"></td>
+                    <td><a th:href="@{/assets/detail(id=${a.assetId})}" th:text="${a.assetTag}"></a></td>
+                    <td th:text="${a.assetType}"></td>
+                    <td th:text="${a.manufacturer}"></td>
+                    <td th:text="${a.model}"></td>
+                    <td>
+                        <span class="label"
+                              th:classappend="${a.status == 'available'} ? 'label-success' : (${a.status == 'assigned'} ? 'label-primary' : (${a.status == 'retired'} ? 'label-default' : 'label-danger'))"
+                              th:text="${a.status}"></span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div id="create-asset-form" class="collapse">
+        <div class="panel panel-success">
+            <div class="panel-heading"><span class="glyphicon glyphicon-plus"></span> Create New Asset</div>
+            <div class="panel-body">
+                <form method="post" action="/assets">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <label for="assetTag">Asset Tag</label>
+                                <input id="assetTag" class="form-control" name="assetTag" placeholder="e.g. CON-LPT-046">
+                            </div>
+                            <div class="form-group">
+                                <label for="assetType">Asset Type</label>
+                                <select id="assetType" class="form-control" name="assetType">
+                                    <option>Laptop</option><option>Monitor</option><option>Keyboard</option>
+                                    <option>Phone</option><option>Keycard/Badge</option><option>Docking Station</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="manufacturer">Manufacturer</label>
+                                <input id="manufacturer" class="form-control" name="manufacturer" placeholder="Manufacturer">
+                            </div>
+                            <div class="form-group">
+                                <label for="model">Model</label>
+                                <input id="model" class="form-control" name="model" placeholder="Model">
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="form-group">
+                                <label for="serialNumber">Serial Number</label>
+                                <input id="serialNumber" class="form-control" name="serialNumber" placeholder="Serial Number">
+                            </div>
+                            <div class="form-group">
+                                <label for="purchaseDate">Purchase Date</label>
+                                <input id="purchaseDate" class="form-control" name="purchaseDate" placeholder="YYYY-MM-DD">
+                            </div>
+                            <div class="form-group">
+                                <label for="warrantyExpiry">Warranty Expiry</label>
+                                <input id="warrantyExpiry" class="form-control" name="warrantyExpiry" placeholder="YYYY-MM-DD">
+                            </div>
+                            <div class="form-group">
+                                <label for="status">Status</label>
+                                <select id="status" class="form-control" name="status">
+                                    <option>available</option><option>assigned</option><option>retired</option><option>lost</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="notes">Notes</label>
+                        <textarea id="notes" class="form-control" name="notes" rows="2" placeholder="Optional notes"></textarea>
+                    </div>
+                    <button class="btn btn-primary" type="submit"><span class="glyphicon glyphicon-ok"></span> Create Asset</button>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
-<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-<script th:src="@{/js/app.js}"></script>
+
+<div th:replace="layout :: footer"></div>
+<div th:replace="layout :: scripts"></div>
 </body>
 </html>

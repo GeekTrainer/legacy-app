@@ -2,19 +2,49 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Employee Detail</title>
+    <title>Employee Detail — AssetTrack</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body>
+<div th:replace="layout :: navbar('employees')"></div>
+
 <div class="container" th:if="${employee != null}">
-    <h1 th:text="${employee.firstName + ' ' + employee.lastName}"></h1>
-    <ul class="list-group">
-        <li class="list-group-item"><strong>Email:</strong> <span th:text="${employee.email}"></span></li>
-        <li class="list-group-item"><strong>Department:</strong> <span th:text="${employee.department}"></span></li>
-        <li class="list-group-item"><strong>Title:</strong> <span th:text="${employee.title}"></span></li>
-        <li class="list-group-item"><strong>Active:</strong> <span th:text="${employee.active}"></span></li>
-    </ul>
-    <a href="/employees" class="btn btn-default">Back</a>
+    <ol class="breadcrumb">
+        <li><a th:href="@{/}">Home</a></li>
+        <li><a th:href="@{/employees}">Employees</a></li>
+        <li class="active" th:text="${employee.firstName + ' ' + employee.lastName}"></li>
+    </ol>
+
+    <div class="page-header">
+        <h1><span class="glyphicon glyphicon-user"></span> <span th:text="${employee.firstName + ' ' + employee.lastName}"></span>
+            <small th:text="${employee.title}"></small>
+        </h1>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-6">
+            <div class="panel panel-default">
+                <div class="panel-heading"><span class="glyphicon glyphicon-info-sign"></span> Employee Information</div>
+                <table class="table">
+                    <tr><th>Name</th><td th:text="${employee.firstName + ' ' + employee.lastName}"></td></tr>
+                    <tr><th>Email</th><td><a th:href="'mailto:' + ${employee.email}" th:text="${employee.email}"></a></td></tr>
+                    <tr><th>Department</th><td th:text="${employee.department}"></td></tr>
+                    <tr><th>Title</th><td th:text="${employee.title}"></td></tr>
+                    <tr><th>Hire Date</th><td th:text="${employee.hireDate} ?: 'N/A'"></td></tr>
+                    <tr><th>Status</th><td>
+                        <span th:if="${employee.active}" class="label label-success">Active</span>
+                        <span th:unless="${employee.active}" class="label label-danger">Inactive</span>
+                    </td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <a th:href="@{/employees}" class="btn btn-default"><span class="glyphicon glyphicon-arrow-left"></span> Back to Employees</a>
 </div>
+
+<div th:replace="layout :: footer"></div>
+<div th:replace="layout :: scripts"></div>
 </body>
 </html>

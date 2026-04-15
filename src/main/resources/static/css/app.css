@@ -1,7 +1,48 @@
 body {
     padding-top: 20px;
+    padding-bottom: 60px;
 }
 
 .top-space {
     margin-top: 20px;
+}
+
+/* Dashboard panel links */
+a.panel-link {
+    text-decoration: none;
+    color: inherit;
+}
+a.panel-link:hover .panel {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+a.panel-link .panel-body h2 {
+    margin: 0;
+    font-size: 36px;
+}
+
+/* Footer */
+.footer {
+    margin-top: 40px;
+    padding: 20px 0;
+    border-top: 1px solid #e5e5e5;
+}
+
+/* Navbar brand icon spacing */
+.navbar-brand .glyphicon {
+    margin-right: 4px;
+}
+
+/* Breadcrumb tightening */
+.breadcrumb {
+    margin-bottom: 10px;
+}
+
+/* Form spacing in filter/assign panels */
+.form-inline .form-group {
+    margin-right: 10px;
+}
+
+/* Table panel — remove double border */
+.panel > .table {
+    margin-bottom: 0;
 }
