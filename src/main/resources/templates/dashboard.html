@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard — AssetTrack</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div th:replace="layout :: navbar('dashboard')"></div>
+
+<div class="container">
+    <div class="page-header">
+        <h1><span class="glyphicon glyphicon-dashboard"></span> Contoso Industries Asset Dashboard</h1>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-4">
+            <a th:href="@{/assets}" class="panel-link">
+                <div class="panel panel-primary">
+                    <div class="panel-heading"><span class="glyphicon glyphicon-briefcase"></span> Total Assets</div>
+                    <div class="panel-body text-center"><h2 th:text="${totalAssets}"></h2></div>
+                </div>
+            </a>
+        </div>
+        <div class="col-sm-4">
+            <a th:href="@{/employees}" class="panel-link">
+                <div class="panel panel-info">
+                    <div class="panel-heading"><span class="glyphicon glyphicon-user"></span> Total Employees</div>
+                    <div class="panel-body text-center"><h2 th:text="${totalEmployees}"></h2></div>
+                </div>
+            </a>
+        </div>
+        <div class="col-sm-4">
+            <a th:href="@{/assignments}" class="panel-link">
+                <div class="panel panel-warning">
+                    <div class="panel-heading"><span class="glyphicon glyphicon-transfer"></span> Open Assignments</div>
+                    <div class="panel-body text-center"><h2 th:text="${openAssignments}"></h2></div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="panel panel-default">
+        <div class="panel-heading"><h3 class="panel-title"><span class="glyphicon glyphicon-stats"></span> Asset Status Summary</h3></div>
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-xs-6 col-sm-3 text-center">
+                    <h3><span class="label label-default">Available</span></h3>
+                    <h4 th:text="${availableCount}"></h4>
+                </div>
+                <div class="col-xs-6 col-sm-3 text-center">
+                    <h3><span class="label label-primary">Assigned</span></h3>
+                    <h4 th:text="${assignedCount}"></h4>
+                </div>
+                <div class="col-xs-6 col-sm-3 text-center">
+                    <h3><span class="label label-success">Retired</span></h3>
+                    <h4 th:text="${retiredCount}"></h4>
+                </div>
+                <div class="col-xs-6 col-sm-3 text-center">
+                    <h3><span class="label label-info">Lost</span></h3>
+                    <h4 th:text="${lostCount}"></h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="well text-center">
+        <p>Quick Actions</p>
+        <a class="btn btn-primary" th:href="@{/assets}"><span class="glyphicon glyphicon-briefcase"></span> Manage Assets</a>
+        <a class="btn btn-default" th:href="@{/employees}"><span class="glyphicon glyphicon-user"></span> View Employees</a>
+        <a class="btn btn-default" th:href="@{/assignments}"><span class="glyphicon glyphicon-transfer"></span> Assignments</a>
+    </div>
+</div>
+
+<div th:replace="layout :: footer"></div>
+<div th:replace="layout :: scripts"></div>
+</body>
+</html>

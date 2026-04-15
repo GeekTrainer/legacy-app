@@ -1,0 +1,3 @@
+asset_tag,asset_type,manufacturer,model,serial_number,purchase_date,warranty_expiry,status,notes
+CON-LPT-099,Laptop,Dell,Latitude 5440,SN99999,2024-01-15,2027-01-15,available,Imported from CSV sample
+CON-MON-099,Monitor,Samsung,S27A600,MON99999,2024-01-15,2027-01-15,available,Imported from CSV sample
