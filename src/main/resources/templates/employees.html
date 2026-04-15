@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Employees</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container">
+    <h1>Employees</h1>
+    <table class="table table-striped">
+        <thead><tr><th>ID</th><th>Name</th><th>Department</th><th>Title</th><th>Active</th></tr></thead>
+        <tbody>
+            <tr th:each="e : ${employees}">
+                <td th:text="${e.employeeId}"></td>
+                <td><a th:href="@{/employees/detail(id=${e.employeeId})}" th:text="${e.firstName + ' ' + e.lastName}"></a></td>
+                <td th:text="${e.department}"></td>
+                <td th:text="${e.title}"></td>
+                <td th:text="${e.active}"></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

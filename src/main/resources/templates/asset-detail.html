@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Asset Detail</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container" th:if="${asset != null}">
+    <h1 th:text="${asset.assetTag}"></h1>
+    <ul class="list-group">
+        <li class="list-group-item"><strong>Type:</strong> <span th:text="${asset.assetType}"></span></li>
+        <li class="list-group-item"><strong>Manufacturer:</strong> <span th:text="${asset.manufacturer}"></span></li>
+        <li class="list-group-item"><strong>Model:</strong> <span th:text="${asset.model}"></span></li>
+        <li class="list-group-item"><strong>Serial:</strong> <span th:text="${asset.serialNumber}"></span></li>
+        <li class="list-group-item"><strong>Status:</strong> <span th:text="${asset.status}"></span></li>
+    </ul>
+    <a href="/assets" class="btn btn-default">Back</a>
+</div>
+</body>
+</html>

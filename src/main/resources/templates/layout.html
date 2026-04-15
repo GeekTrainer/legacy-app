@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AssetTrack</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<nav class="navbar navbar-inverse">
+    <div class="container">
+        <div class="navbar-header"><a class="navbar-brand" th:href="@{/}">AssetTrack</a></div>
+        <ul class="nav navbar-nav">
+            <li><a th:href="@{/assets}">Assets</a></li>
+            <li><a th:href="@{/employees}">Employees</a></li>
+            <li><a th:href="@{/assignments}">Assignments</a></li>
+        </ul>
+    </div>
+</nav>
+<div class="container" th:fragment="content"></div>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

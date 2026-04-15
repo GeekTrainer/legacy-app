@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Employee Detail</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container" th:if="${employee != null}">
+    <h1 th:text="${employee.firstName + ' ' + employee.lastName}"></h1>
+    <ul class="list-group">
+        <li class="list-group-item"><strong>Email:</strong> <span th:text="${employee.email}"></span></li>
+        <li class="list-group-item"><strong>Department:</strong> <span th:text="${employee.department}"></span></li>
+        <li class="list-group-item"><strong>Title:</strong> <span th:text="${employee.title}"></span></li>
+        <li class="list-group-item"><strong>Active:</strong> <span th:text="${employee.active}"></span></li>
+    </ul>
+    <a href="/employees" class="btn btn-default">Back</a>
+</div>
+</body>
+</html>

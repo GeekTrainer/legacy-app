@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Assignments</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container">
+    <h1>Assignments</h1>
+    <div class="alert alert-danger" th:if="${error}" th:text="${error}"></div>
+    <form method="post" action="/assignments" class="form-inline">
+        <select name="assetId" class="form-control">
+            <option th:each="a : ${assets}" th:value="${a.assetId}" th:text="${a.assetTag + ' (' + a.status + ')'}"></option>
+        </select>
+        <select name="employeeId" class="form-control">
+            <option th:each="e : ${employees}" th:value="${e.employeeId}" th:text="${e.firstName + ' ' + e.lastName}"></option>
+        </select>
+        <input name="assignedDate" class="form-control" placeholder="YYYY-MM-DD">
+        <input name="assignedBy" class="form-control" placeholder="Assigned by">
+        <button class="btn btn-primary" type="submit">Assign</button>
+    </form>
+
+    <table class="table table-bordered top-space">
+        <thead><tr><th>ID</th><th>Asset</th><th>Employee</th><th>Assigned</th><th>Returned</th><th>Action</th></tr></thead>
+        <tbody>
+            <tr th:each="as : ${assignments}">
+                <td th:text="${as.assignmentId}"></td>
+                <td th:text="${as.assetId}"></td>
+                <td th:text="${as.employeeId}"></td>
+                <td th:text="${as.assignedDate}"></td>
+                <td th:text="${as.returnedDate}"></td>
+                <td>
+                    <form th:if="${as.returnedDate == null}" method="post" action="/assignments/return">
+                        <input type="hidden" name="assignmentId" th:value="${as.assignmentId}">
+                        <button class="btn btn-xs btn-default" type="submit">Return</button>
+                    </form>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

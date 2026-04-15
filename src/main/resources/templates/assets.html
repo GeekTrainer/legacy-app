@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Assets</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="container">
+    <h1>Assets</h1>
+    <form id="asset-filter-form" method="get" action="/assets" class="form-inline">
+        <label>Type</label>
+        <select name="type" class="form-control">
+            <option value="">All</option>
+            <option value="Laptop" th:selected="${selectedType == 'Laptop'}">Laptop</option>
+            <option value="Monitor" th:selected="${selectedType == 'Monitor'}">Monitor</option>
+            <option value="Keyboard" th:selected="${selectedType == 'Keyboard'}">Keyboard</option>
+            <option value="Phone" th:selected="${selectedType == 'Phone'}">Phone</option>
+            <option value="Keycard/Badge" th:selected="${selectedType == 'Keycard/Badge'}">Keycard/Badge</option>
+            <option value="Docking Station" th:selected="${selectedType == 'Docking Station'}">Docking Station</option>
+        </select>
+        <label>Status</label>
+        <select name="status" class="form-control">
+            <option value="">All</option>
+            <option value="available" th:selected="${selectedStatus == 'available'}">available</option>
+            <option value="assigned" th:selected="${selectedStatus == 'assigned'}">assigned</option>
+            <option value="retired" th:selected="${selectedStatus == 'retired'}">retired</option>
+            <option value="lost" th:selected="${selectedStatus == 'lost'}">lost</option>
+        </select>
+        <button class="btn btn-default" type="submit">Filter</button>
+    </form>
+
+    <table class="table table-striped">
+        <thead><tr><th>ID</th><th>Tag</th><th>Type</th><th>Manufacturer</th><th>Status</th></tr></thead>
+        <tbody>
+            <tr th:each="a : ${assets}">
+                <td th:text="${a.assetId}"></td>
+                <td><a th:href="@{/assets/detail(id=${a.assetId})}" th:text="${a.assetTag}"></a></td>
+                <td th:text="${a.assetType}"></td>
+                <td th:text="${a.manufacturer}"></td>
+                <td th:text="${a.status}"></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Create Asset</h3>
+    <form method="post" action="/assets">
+        <div class="form-group"><input class="form-control" name="assetTag" placeholder="Asset Tag"></div>
+        <div class="form-group"><input class="form-control" name="assetType" placeholder="Asset Type"></div>
+        <div class="form-group"><input class="form-control" name="manufacturer" placeholder="Manufacturer"></div>
+        <div class="form-group"><input class="form-control" name="model" placeholder="Model"></div>
+        <div class="form-group"><input class="form-control" name="serialNumber" placeholder="Serial Number"></div>
+        <div class="form-group"><input class="form-control" name="purchaseDate" placeholder="Purchase Date (YYYY-MM-DD)"></div>
+        <div class="form-group"><input class="form-control" name="warrantyExpiry" placeholder="Warranty Expiry (YYYY-MM-DD)"></div>
+        <div class="form-group"><select class="form-control" name="status"><option>available</option><option>assigned</option><option>retired</option><option>lost</option></select></div>
+        <div class="form-group"><textarea class="form-control" name="notes" placeholder="Notes"></textarea></div>
+        <button class="btn btn-primary" type="submit">Create</button>
+    </form>
+</div>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>

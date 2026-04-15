@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<div class="container">
+    <h1>Contoso Industries Asset Dashboard</h1>
+    <div class="row">
+        <div class="col-xs-4"><div class="panel panel-default"><div class="panel-heading">Total Assets</div><div class="panel-body"><span th:text="${totalAssets}"></span></div></div></div>
+        <div class="col-xs-4"><div class="panel panel-default"><div class="panel-heading">Total Employees</div><div class="panel-body"><span th:text="${totalEmployees}"></span></div></div></div>
+        <div class="col-xs-4"><div class="panel panel-default"><div class="panel-heading">Open Assignments</div><div class="panel-body"><span th:text="${openAssignments}"></span></div></div></div>
+    </div>
+    <h3>Asset Status</h3>
+    <p><span class="label label-default">Available</span> <span th:text="${availableCount}"></span></p>
+    <p><span class="label label-primary">Assigned</span> <span th:text="${assignedCount}"></span></p>
+    <p><span class="label label-success">Retired</span> <span th:text="${retiredCount}"></span></p>
+    <p><span class="label label-info">Lost</span> <span th:text="${lostCount}"></span></p>
+    <hr>
+    <p><a class="btn btn-default" th:href="@{/assets}">Assets</a> <a class="btn btn-default" th:href="@{/employees}">Employees</a> <a class="btn btn-default" th:href="@{/assignments}">Assignments</a></p>
+</div>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>
