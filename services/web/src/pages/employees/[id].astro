@@ -1,0 +1,59 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { getEmployee, listAssignments } from "../../lib/api/workforce";
+
+const id = Number(Astro.params.id);
+let emp: Awaited<ReturnType<typeof getEmployee>> | null = null;
+let assignments: Awaited<ReturnType<typeof listAssignments>> = [];
+let error: string | null = null;
+
+try {
+  emp = await getEmployee(id);
+  assignments = await listAssignments({ employeeId: id });
+} catch (e: any) {
+  error = e.message;
+}
+---
+<Layout title={emp ? `${emp.firstName} ${emp.lastName}` : "Employee"}>
+  {error && <div class="rounded border border-red-200 bg-red-50 text-red-900 p-3 text-sm mb-4">{error}</div>}
+  {emp && (
+    <>
+      <div class="flex items-baseline gap-3 mb-2">
+        <h1 class="text-2xl font-semibold">{emp.firstName} {emp.lastName}</h1>
+        {!emp.active && <span class="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full">Inactive</span>}
+      </div>
+      <p class="text-slate-600 mb-4">{emp.title} — {emp.department}</p>
+      <div class="bg-white rounded-lg shadow-sm p-4 mb-6 text-sm grid grid-cols-2 gap-y-1">
+        <div class="text-slate-500">Email</div><div>{emp.email}</div>
+        <div class="text-slate-500">Hire date</div><div>{emp.hireDate ?? "—"}</div>
+      </div>
+
+      <h2 class="text-lg font-medium mb-2">Assignments</h2>
+      <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-100 text-slate-700">
+            <tr>
+              <th class="text-left px-3 py-2">Assigned</th>
+              <th class="text-left px-3 py-2">Returned</th>
+              <th class="text-left px-3 py-2">Asset</th>
+              <th class="text-left px-3 py-2">Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {assignments.map(a => (
+              <tr class="border-t">
+                <td class="px-3 py-2">{a.assignedDate}</td>
+                <td class="px-3 py-2">{a.returnedDate ?? <em class="text-slate-500">active</em>}</td>
+                <td class="px-3 py-2"><a class="underline" href={`/assets/${a.assetId}`}>#{a.assetId}</a></td>
+                <td class="px-3 py-2 text-slate-500">{a.notes ?? "—"}</td>
+              </tr>
+            ))}
+            {assignments.length === 0 && (
+              <tr><td colspan="4" class="px-3 py-6 text-center text-slate-500">No assignments yet.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
+  )}
+</Layout>

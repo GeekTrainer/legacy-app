@@ -1,0 +1,4 @@
+asset_tag,asset_type,manufacturer,model,serial_number,purchase_date,warranty_expiry,status,notes
+CON-LPT-099,Laptop,Dell,Latitude 5450,DL-5450-099,2024-05-01,2027-05-01,available,
+CON-MON-099,Monitor,LG,32UP550,LG-32-099,2024-05-01,2027-05-01,available,
+CON-KBD-099,Keyboard,Logitech,MX Keys S,,2024-05-01,2026-05-01,available,no serial yet

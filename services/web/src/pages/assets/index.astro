@@ -1,0 +1,85 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import StatusBadge from "../../components/StatusBadge.astro";
+import { listAssets, searchAssets, type Asset } from "../../lib/api/assets";
+
+const params = Astro.url.searchParams;
+const type = params.get("type") ?? "";
+const status = params.get("status") ?? "";
+const q = params.get("q") ?? "";
+
+let assets: Asset[] = [];
+let error: string | null = null;
+
+try {
+  assets = (type || status || q)
+    ? await searchAssets({ type, status, q })
+    : await listAssets();
+} catch (e: any) {
+  error = e.message;
+}
+
+const allTypes = ["Laptop", "Monitor", "Keyboard", "Phone", "Keycard", "Docking Station"];
+const allStatuses = ["available", "assigned", "retired", "lost"];
+---
+<Layout title="Assets">
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-2xl font-semibold">Assets</h1>
+    <a href="/assets/new" class="rounded bg-slate-900 text-white px-3 py-1.5 text-sm">+ New asset</a>
+  </div>
+
+  <form method="get" class="bg-white rounded-lg shadow-sm p-4 mb-4 flex flex-wrap gap-3 items-end">
+    <label class="flex flex-col text-xs">
+      <span class="text-slate-600 mb-1">Type</span>
+      <select name="type" class="border rounded px-2 py-1 text-sm">
+        <option value="">Any</option>
+        {allTypes.map(t => <option value={t} selected={t === type}>{t}</option>)}
+      </select>
+    </label>
+    <label class="flex flex-col text-xs">
+      <span class="text-slate-600 mb-1">Status</span>
+      <select name="status" class="border rounded px-2 py-1 text-sm">
+        <option value="">Any</option>
+        {allStatuses.map(s => <option value={s} selected={s === status}>{s}</option>)}
+      </select>
+    </label>
+    <label class="flex flex-col text-xs">
+      <span class="text-slate-600 mb-1">Search tag / manufacturer / model</span>
+      <input type="text" name="q" value={q} class="border rounded px-2 py-1 text-sm w-64" />
+    </label>
+    <button class="rounded bg-slate-900 text-white text-sm px-3 py-1.5">Filter</button>
+    {(type || status || q) && <a href="/assets" class="text-sm text-slate-600 underline">Clear</a>}
+  </form>
+
+  {error && <div class="rounded border border-red-200 bg-red-50 text-red-900 p-3 text-sm mb-4">{error}</div>}
+
+  <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-100 text-slate-700">
+        <tr>
+          <th class="text-left px-3 py-2">Tag</th>
+          <th class="text-left px-3 py-2">Type</th>
+          <th class="text-left px-3 py-2">Make / Model</th>
+          <th class="text-left px-3 py-2">Serial</th>
+          <th class="text-left px-3 py-2">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {assets.map(a => (
+          <tr class="border-t hover:bg-slate-50">
+            <td class="px-3 py-2 font-mono">
+              <a href={`/assets/${a.id}`} class="text-slate-900 underline">{a.assetTag}</a>
+            </td>
+            <td class="px-3 py-2">{a.assetType}</td>
+            <td class="px-3 py-2">{a.manufacturer} {a.model}</td>
+            <td class="px-3 py-2 font-mono text-xs text-slate-500">{a.serialNumber ?? "—"}</td>
+            <td class="px-3 py-2"><StatusBadge status={a.status} /></td>
+          </tr>
+        ))}
+        {assets.length === 0 && (
+          <tr><td colspan="5" class="px-3 py-6 text-center text-slate-500">No assets match.</td></tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+</Layout>

@@ -1,0 +1,42 @@
+---
+import "../styles/tailwind.css";
+const { title } = Astro.props as { title: string };
+const path = Astro.url.pathname;
+const links = [
+  { href: "/",            label: "Dashboard" },
+  { href: "/assets",      label: "Assets" },
+  { href: "/employees",   label: "Employees" },
+  { href: "/assignments", label: "Assignments" },
+  { href: "/reports",     label: "Reports" },
+];
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{title} — AssetTrack</title>
+  </head>
+  <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+    <header class="bg-slate-900 text-white">
+      <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
+        <a href="/" class="font-semibold text-lg">AssetTrack</a>
+        <span class="text-slate-400 text-sm">Contoso Industries</span>
+        <nav class="ml-auto flex gap-4 text-sm">
+          {links.map(l => (
+            <a href={l.href}
+               class={"hover:text-white " + (path === l.href || (l.href !== "/" && path.startsWith(l.href)) ? "text-white" : "text-slate-300")}>
+              {l.label}
+            </a>
+          ))}
+        </nav>
+      </div>
+    </header>
+    <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-6">
+      <slot />
+    </main>
+    <footer class="text-center text-xs text-slate-500 py-4">
+      Polyglot rebuild — for course exercises only
+    </footer>
+  </body>
+</html>

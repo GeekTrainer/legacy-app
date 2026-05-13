@@ -1,0 +1,65 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { createAsset } from "../../lib/api/assets";
+
+let createdId: number | null = null;
+let errorText: string | null = null;
+
+if (Astro.request.method === "POST") {
+  const form = await Astro.request.formData();
+  // NOTE: deliberately no client- or server-side validation here.
+  // assets-svc accepts whatever we send. Fixing this is course exercise #7.
+  const body = {
+    assetTag: String(form.get("assetTag") ?? ""),
+    assetType: String(form.get("assetType") ?? ""),
+    manufacturer: String(form.get("manufacturer") ?? ""),
+    model: String(form.get("model") ?? ""),
+    serialNumber: (form.get("serialNumber") as string) || null,
+    purchaseDate: (form.get("purchaseDate") as string) || null,
+    warrantyExpiry: (form.get("warrantyExpiry") as string) || null,
+    status: String(form.get("status") ?? "available"),
+    notes: (form.get("notes") as string) || null,
+  };
+  try {
+    const r = await createAsset(body);
+    createdId = r.id;
+  } catch (e: any) {
+    errorText = e.message;
+  }
+}
+
+if (createdId) {
+  return Astro.redirect(`/assets/${createdId}`);
+}
+
+const types = ["Laptop", "Monitor", "Keyboard", "Phone", "Keycard", "Docking Station"];
+const statuses = ["available", "assigned", "retired", "lost"];
+---
+<Layout title="New asset">
+  <h1 class="text-2xl font-semibold mb-4">New asset</h1>
+  {errorText && <div class="rounded border border-red-200 bg-red-50 text-red-900 p-3 text-sm mb-4">{errorText}</div>}
+  <form method="post" class="bg-white rounded-lg shadow-sm p-4 grid grid-cols-2 gap-4 text-sm">
+    <label class="flex flex-col"><span class="text-slate-600 mb-1">Asset tag</span><input class="border rounded px-2 py-1" name="assetTag" /></label>
+    <label class="flex flex-col"><span class="text-slate-600 mb-1">Type</span>
+      <select class="border rounded px-2 py-1" name="assetType">
+        <option value="">(choose)</option>
+        {types.map(t => <option value={t}>{t}</option>)}
+      </select>
+    </label>
+    <label class="flex flex-col"><span class="text-slate-600 mb-1">Manufacturer</span><input class="border rounded px-2 py-1" name="manufacturer" /></label>
+    <label class="flex flex-col"><span class="text-slate-600 mb-1">Model</span><input class="border rounded px-2 py-1" name="model" /></label>
+    <label class="flex flex-col"><span class="text-slate-600 mb-1">Serial number</span><input class="border rounded px-2 py-1" name="serialNumber" /></label>
+    <label class="flex flex-col"><span class="text-slate-600 mb-1">Status</span>
+      <select class="border rounded px-2 py-1" name="status">
+        {statuses.map(s => <option value={s}>{s}</option>)}
+      </select>
+    </label>
+    <label class="flex flex-col"><span class="text-slate-600 mb-1">Purchase date</span><input class="border rounded px-2 py-1" name="purchaseDate" type="date" /></label>
+    <label class="flex flex-col"><span class="text-slate-600 mb-1">Warranty expiry</span><input class="border rounded px-2 py-1" name="warrantyExpiry" type="date" /></label>
+    <label class="flex flex-col col-span-2"><span class="text-slate-600 mb-1">Notes</span><textarea class="border rounded px-2 py-1" name="notes" rows="3"></textarea></label>
+    <div class="col-span-2 flex gap-3">
+      <button class="rounded bg-slate-900 text-white px-3 py-1.5">Create</button>
+      <a href="/assets" class="text-sm text-slate-600 underline self-center">Cancel</a>
+    </div>
+  </form>
+</Layout>

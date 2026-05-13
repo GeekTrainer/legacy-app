@@ -1,0 +1,47 @@
+-- Seed data for workforce-svc. Loaded once on first start because spring.sql.init.mode=always
+-- combined with ddl-auto=update is idempotent only if we guard inserts.
+
+INSERT OR IGNORE INTO employees (id, first_name, last_name, email, department, title, hire_date, is_active) VALUES
+  (1, 'Maya',      'Patel',      'maya.patel@contoso.example',      'Engineering',     'Senior Engineer',     '2019-04-08', 1),
+  (2, 'Marcus',    'Johnson',    'marcus.johnson@contoso.example',  'Engineering',     'Staff Engineer',      '2017-09-12', 1),
+  (3, 'Sofia',     'Rossi',      'sofia.rossi@contoso.example',     'Engineering',     'Engineering Manager', '2016-02-01', 1),
+  (4, 'Wei',       'Chen',       'wei.chen@contoso.example',        'Engineering',     'Software Engineer',   '2022-06-20', 1),
+  (5, 'Aaliyah',   'Williams',   'aaliyah.williams@contoso.example','Engineering',     'Software Engineer',   '2023-01-15', 1),
+  (6, 'Diego',     'Hernandez',  'diego.hernandez@contoso.example', 'Engineering',     'Software Engineer',   '2021-11-03', 1),
+  (7, 'Priya',     'Sharma',     'priya.sharma@contoso.example',    'Engineering',     'Tech Lead',           '2018-07-22', 1),
+  (8, 'Liam',      'OConnor',    'liam.oconnor@contoso.example',    'Engineering',     'Software Engineer',   '2022-03-14', 0),
+  (9, 'Nadia',     'Hassan',     'nadia.hassan@contoso.example',    'Marketing',       'Marketing Manager',   '2018-08-30', 1),
+  (10,'Jordan',    'Lee',        'jordan.lee@contoso.example',      'Marketing',       'Content Strategist',  '2021-04-12', 1),
+  (11,'Camila',    'Garcia',     'camila.garcia@contoso.example',   'Marketing',       'Marketing Specialist','2023-02-06', 1),
+  (12,'Tyrone',    'Brooks',     'tyrone.brooks@contoso.example',   'Marketing',       'Designer',            '2020-10-19', 1),
+  (13,'Hiroshi',   'Tanaka',     'hiroshi.tanaka@contoso.example',  'Finance',         'CFO',                 '2015-01-05', 1),
+  (14,'Rebecca',   'Goldberg',   'rebecca.goldberg@contoso.example','Finance',         'Senior Accountant',   '2019-09-23', 1),
+  (15,'Chukwu',    'Okafor',     'chukwu.okafor@contoso.example',   'Finance',         'Financial Analyst',   '2022-08-15', 1),
+  (16,'Anna',      'Kowalski',   'anna.kowalski@contoso.example',   'Finance',         'Accountant',          '2021-05-30', 1),
+  (17,'Ravi',      'Krishnan',   'ravi.krishnan@contoso.example',   'Human Resources', 'VP, People',          '2017-03-11', 1),
+  (18,'Emma',      'Thompson',   'emma.thompson@contoso.example',   'Human Resources', 'HR Business Partner', '2020-06-18', 1),
+  (19,'Khaled',    'Mansour',    'khaled.mansour@contoso.example',  'Human Resources', 'Recruiter',           '2022-11-09', 1),
+  (20,'Sandra',    'Mwangi',     'sandra.mwangi@contoso.example',   'Operations',      'Operations Manager',  '2018-12-04', 1),
+  (21,'Ben',       'Carter',     'ben.carter@contoso.example',      'Operations',      'IT Support',          '2021-07-21', 1),
+  (22,'Yuki',      'Nakamura',   'yuki.nakamura@contoso.example',   'Operations',      'Facilities',          '2020-02-14', 0),
+  (23,'Olivia',    'Bennett',    'olivia.bennett@contoso.example',  'Sales',           'VP, Sales',           '2016-10-01', 1),
+  (24,'Carlos',    'Mendoza',    'carlos.mendoza@contoso.example',  'Sales',           'Account Executive',   '2019-03-25', 1),
+  (25,'Naomi',     'Reyes',      'naomi.reyes@contoso.example',     'Sales',           'Sales Engineer',      '2022-09-12', 1),
+  (26,'David',     'Park',       'david.park@contoso.example',      'Sales',           'Account Executive',   '2021-01-29', 1);
+
+INSERT OR IGNORE INTO assignments (id, asset_id, employee_id, assigned_date, returned_date, assigned_by, notes) VALUES
+  (1, 1,  1,  '2022-03-20', NULL,         'helpdesk@contoso.example', NULL),
+  (2, 2,  2,  '2022-03-20', NULL,         'helpdesk@contoso.example', NULL),
+  (3, 5,  3,  '2023-06-05', NULL,         'helpdesk@contoso.example', 'M-series upgrade'),
+  (4, 6,  4,  '2023-02-22', NULL,         'helpdesk@contoso.example', NULL),
+  (5, 8,  1,  '2022-05-15', NULL,         'helpdesk@contoso.example', NULL),
+  (6, 9,  2,  '2022-05-15', NULL,         'helpdesk@contoso.example', NULL),
+  (7, 12, 1,  '2023-01-08', NULL,         'helpdesk@contoso.example', NULL),
+  (8, 14, 3,  '2022-12-01', NULL,         'helpdesk@contoso.example', NULL),
+  (9, 16, 5,  '2023-04-10', NULL,         'helpdesk@contoso.example', NULL),
+  (10,17, 6,  '2023-04-10', NULL,         'helpdesk@contoso.example', NULL),
+  (11,20, 7,  '2022-08-20', NULL,         'helpdesk@contoso.example', NULL),
+  (12,21, 9,  '2022-08-20', NULL,         'helpdesk@contoso.example', NULL),
+  (13,4,  8,  '2021-09-01', '2024-08-22', 'helpdesk@contoso.example', 'Returned, then retired'),
+  (14,7,  10, '2020-11-10', '2022-04-30', 'helpdesk@contoso.example', 'Lost while travelling'),
+  (15,11, 22, '2020-05-01', '2024-01-15', 'helpdesk@contoso.example', NULL);

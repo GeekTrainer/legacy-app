@@ -1,0 +1,67 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { listAssignments } from "../../lib/api/workforce";
+
+let assignments: Awaited<ReturnType<typeof listAssignments>> = [];
+let error: string | null = null;
+try { assignments = await listAssignments(); } catch (e: any) { error = e.message; }
+
+const active = assignments.filter(a => a.returnedDate === null);
+const returned = assignments.filter(a => a.returnedDate !== null);
+---
+<Layout title="Assignments">
+  <h1 class="text-2xl font-semibold mb-4">Assignments</h1>
+  {error && <div class="rounded border border-red-200 bg-red-50 text-red-900 p-3 text-sm mb-4">{error}</div>}
+
+  <h2 class="text-lg font-medium mb-2">Active ({active.length})</h2>
+  <div class="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-100 text-slate-700">
+        <tr>
+          <th class="text-left px-3 py-2">#</th>
+          <th class="text-left px-3 py-2">Asset</th>
+          <th class="text-left px-3 py-2">Employee</th>
+          <th class="text-left px-3 py-2">Assigned</th>
+          <th class="text-left px-3 py-2">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {active.map(a => (
+          <tr class="border-t">
+            <td class="px-3 py-2 font-mono">{a.id}</td>
+            <td class="px-3 py-2"><a class="underline" href={`/assets/${a.assetId}`}>#{a.assetId}</a></td>
+            <td class="px-3 py-2"><a class="underline" href={`/employees/${a.employeeId}`}>#{a.employeeId}</a></td>
+            <td class="px-3 py-2">{a.assignedDate}</td>
+            <td class="px-3 py-2 text-slate-500">{a.notes ?? "—"}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="text-lg font-medium mb-2">Returned ({returned.length})</h2>
+  <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-100 text-slate-700">
+        <tr>
+          <th class="text-left px-3 py-2">#</th>
+          <th class="text-left px-3 py-2">Asset</th>
+          <th class="text-left px-3 py-2">Employee</th>
+          <th class="text-left px-3 py-2">Assigned</th>
+          <th class="text-left px-3 py-2">Returned</th>
+        </tr>
+      </thead>
+      <tbody>
+        {returned.map(a => (
+          <tr class="border-t">
+            <td class="px-3 py-2 font-mono">{a.id}</td>
+            <td class="px-3 py-2"><a class="underline" href={`/assets/${a.assetId}`}>#{a.assetId}</a></td>
+            <td class="px-3 py-2"><a class="underline" href={`/employees/${a.employeeId}`}>#{a.employeeId}</a></td>
+            <td class="px-3 py-2">{a.assignedDate}</td>
+            <td class="px-3 py-2">{a.returnedDate}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</Layout>

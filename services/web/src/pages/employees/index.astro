@@ -1,0 +1,66 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { listEmployees } from "../../lib/api/workforce";
+
+const params = Astro.url.searchParams;
+const department = params.get("department") ?? "";
+const onlyActive = params.get("active") === "true";
+
+let employees = [] as Awaited<ReturnType<typeof listEmployees>>;
+let error: string | null = null;
+
+try {
+  employees = await listEmployees({
+    department: department || undefined,
+    active: onlyActive ? true : undefined,
+  });
+} catch (e: any) {
+  error = e.message;
+}
+
+const departments = ["Engineering", "Marketing", "Finance", "Human Resources", "Operations", "Sales"];
+---
+<Layout title="Employees">
+  <h1 class="text-2xl font-semibold mb-4">Employees</h1>
+  <form method="get" class="bg-white rounded-lg shadow-sm p-4 mb-4 flex flex-wrap gap-3 items-end text-sm">
+    <label class="flex flex-col">
+      <span class="text-slate-600 mb-1">Department</span>
+      <select name="department" class="border rounded px-2 py-1">
+        <option value="">All</option>
+        {departments.map(d => <option value={d} selected={d === department}>{d}</option>)}
+      </select>
+    </label>
+    <label class="flex items-center gap-2 mt-5">
+      <input type="checkbox" name="active" value="true" checked={onlyActive} />
+      <span>Active only</span>
+    </label>
+    <button class="rounded bg-slate-900 text-white px-3 py-1.5">Filter</button>
+  </form>
+  {error && <div class="rounded border border-red-200 bg-red-50 text-red-900 p-3 text-sm mb-4">{error}</div>}
+  <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-100 text-slate-700">
+        <tr>
+          <th class="text-left px-3 py-2">Name</th>
+          <th class="text-left px-3 py-2">Email</th>
+          <th class="text-left px-3 py-2">Department</th>
+          <th class="text-left px-3 py-2">Title</th>
+          <th class="text-left px-3 py-2">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {employees.map(e => (
+          <tr class="border-t hover:bg-slate-50">
+            <td class="px-3 py-2"><a class="underline" href={`/employees/${e.id}`}>{e.firstName} {e.lastName}</a></td>
+            <td class="px-3 py-2 text-slate-600">{e.email}</td>
+            <td class="px-3 py-2">{e.department}</td>
+            <td class="px-3 py-2">{e.title}</td>
+            <td class="px-3 py-2">
+              {e.active ? <span class="text-emerald-700">Active</span> : <span class="text-slate-500">Inactive</span>}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</Layout>

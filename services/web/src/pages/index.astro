@@ -1,0 +1,81 @@
+---
+import Layout from "../layouts/Layout.astro";
+import StatusBadge from "../components/StatusBadge.astro";
+import { statsByStatus } from "../lib/api/assets";
+import { listEmployees } from "../lib/api/workforce";
+import { utilization } from "../lib/api/reporting";
+
+let assetStats: Record<string, number> = {};
+let employeeCount = 0;
+let activeCount = 0;
+let utilizationPct = 0;
+let errors: string[] = [];
+
+try {
+  assetStats = await statsByStatus();
+} catch (e: any) {
+  errors.push(`assets-svc: ${e.message}`);
+}
+
+try {
+  const employees = await listEmployees();
+  employeeCount = employees.length;
+  activeCount = employees.filter(e => e.active).length;
+} catch (e: any) {
+  errors.push(`workforce-svc: ${e.message}`);
+}
+
+try {
+  const u = await utilization();
+  utilizationPct = u.utilization_pct;
+} catch (e: any) {
+  errors.push(`reporting-svc: ${e.message}`);
+}
+
+const totalAssets = Object.values(assetStats).reduce((a, b) => a + b, 0);
+const statusOrder = ["available", "assigned", "retired", "lost"];
+---
+<Layout title="Dashboard">
+  <h1 class="text-2xl font-semibold mb-6">Dashboard</h1>
+
+  {errors.length > 0 && (
+    <div class="mb-6 rounded border border-amber-200 bg-amber-50 text-amber-900 p-3 text-sm">
+      <p class="font-medium mb-1">Some backend services aren't responding:</p>
+      <ul class="list-disc pl-5">
+        {errors.map(e => <li>{e}</li>)}
+      </ul>
+    </div>
+  )}
+
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white rounded-lg shadow-sm p-4">
+      <div class="text-sm text-slate-500">Total assets</div>
+      <div class="text-3xl font-semibold">{totalAssets}</div>
+    </div>
+    <div class="bg-white rounded-lg shadow-sm p-4">
+      <div class="text-sm text-slate-500">Employees</div>
+      <div class="text-3xl font-semibold">{employeeCount}</div>
+      <div class="text-xs text-slate-500 mt-1">{activeCount} active</div>
+    </div>
+    <div class="bg-white rounded-lg shadow-sm p-4">
+      <div class="text-sm text-slate-500">Utilization</div>
+      <div class="text-3xl font-semibold">{utilizationPct}%</div>
+    </div>
+    <div class="bg-white rounded-lg shadow-sm p-4">
+      <div class="text-sm text-slate-500">Lost / retired</div>
+      <div class="text-3xl font-semibold">{(assetStats.lost ?? 0) + (assetStats.retired ?? 0)}</div>
+    </div>
+  </div>
+
+  <h2 class="text-lg font-medium mb-3">Assets by status</h2>
+  <div class="bg-white rounded-lg shadow-sm p-4">
+    <ul class="divide-y">
+      {statusOrder.filter(s => assetStats[s]).map(s => (
+        <li class="py-2 flex items-center justify-between">
+          <StatusBadge status={s} />
+          <span class="font-mono">{assetStats[s]}</span>
+        </li>
+      ))}
+    </ul>
+  </div>
+</Layout>

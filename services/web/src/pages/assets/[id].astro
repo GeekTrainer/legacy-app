@@ -1,0 +1,68 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import StatusBadge from "../../components/StatusBadge.astro";
+import { getAsset } from "../../lib/api/assets";
+import { listAssignments } from "../../lib/api/workforce";
+
+const id = Number(Astro.params.id);
+let asset: Awaited<ReturnType<typeof getAsset>> | null = null;
+let assignments: Awaited<ReturnType<typeof listAssignments>> = [];
+let error: string | null = null;
+
+try {
+  asset = await getAsset(id);
+  assignments = await listAssignments({ assetId: id });
+} catch (e: any) {
+  error = e.message;
+}
+---
+<Layout title={asset ? asset.assetTag : "Asset"}>
+  {error && <div class="rounded border border-red-200 bg-red-50 text-red-900 p-3 text-sm mb-4">{error}</div>}
+
+  {asset && (
+    <>
+      <div class="flex items-baseline gap-3 mb-4">
+        <h1 class="text-2xl font-semibold font-mono">{asset.assetTag}</h1>
+        <StatusBadge status={asset.status} />
+      </div>
+      <div class="bg-white rounded-lg shadow-sm p-4 mb-6 grid grid-cols-2 gap-y-2 text-sm">
+        <div class="text-slate-500">Type</div><div>{asset.assetType}</div>
+        <div class="text-slate-500">Manufacturer</div><div>{asset.manufacturer}</div>
+        <div class="text-slate-500">Model</div><div>{asset.model}</div>
+        <div class="text-slate-500">Serial number</div><div class="font-mono">{asset.serialNumber ?? "—"}</div>
+        <div class="text-slate-500">Purchase date</div><div>{asset.purchaseDate ?? "—"}</div>
+        <div class="text-slate-500">Warranty expiry</div><div>{asset.warrantyExpiry ?? "—"}</div>
+        <div class="text-slate-500">Notes</div><div>{asset.notes ?? "—"}</div>
+      </div>
+
+      <h2 class="text-lg font-medium mb-2">Assignment history</h2>
+      <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-100 text-slate-700">
+            <tr>
+              <th class="text-left px-3 py-2">Assigned</th>
+              <th class="text-left px-3 py-2">Returned</th>
+              <th class="text-left px-3 py-2">Employee</th>
+              <th class="text-left px-3 py-2">By</th>
+              <th class="text-left px-3 py-2">Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {assignments.map(a => (
+              <tr class="border-t">
+                <td class="px-3 py-2">{a.assignedDate}</td>
+                <td class="px-3 py-2">{a.returnedDate ?? <em class="text-slate-500">active</em>}</td>
+                <td class="px-3 py-2"><a class="underline" href={`/employees/${a.employeeId}`}>#{a.employeeId}</a></td>
+                <td class="px-3 py-2 text-slate-500">{a.assignedBy ?? "—"}</td>
+                <td class="px-3 py-2 text-slate-500">{a.notes ?? "—"}</td>
+              </tr>
+            ))}
+            {assignments.length === 0 && (
+              <tr><td colspan="5" class="px-3 py-6 text-center text-slate-500">No assignments yet.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
+  )}
+</Layout>
