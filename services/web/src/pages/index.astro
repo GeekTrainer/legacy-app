@@ -36,44 +36,60 @@ const totalAssets = Object.values(assetStats).reduce((a, b) => a + b, 0);
 const statusOrder = ["available", "assigned", "retired", "lost"];
 ---
 <Layout title="Dashboard">
-  <h1 class="text-2xl font-semibold mb-6">Dashboard</h1>
+  <h1 class="h3 mb-4">Dashboard</h1>
 
   {errors.length > 0 && (
-    <div class="mb-6 rounded border border-amber-200 bg-amber-50 text-amber-900 p-3 text-sm">
-      <p class="font-medium mb-1">Some backend services aren't responding:</p>
-      <ul class="list-disc pl-5">
+    <div class="alert alert-warning">
+      <p class="fw-semibold mb-1">Some backend services aren't responding:</p>
+      <ul class="mb-0">
         {errors.map(e => <li>{e}</li>)}
       </ul>
     </div>
   )}
 
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-    <div class="bg-white rounded-lg shadow-sm p-4">
-      <div class="text-sm text-slate-500">Total assets</div>
-      <div class="text-3xl font-semibold">{totalAssets}</div>
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-secondary small">Total assets</div>
+          <div class="display-6 fw-semibold">{totalAssets}</div>
+        </div>
+      </div>
     </div>
-    <div class="bg-white rounded-lg shadow-sm p-4">
-      <div class="text-sm text-slate-500">Employees</div>
-      <div class="text-3xl font-semibold">{employeeCount}</div>
-      <div class="text-xs text-slate-500 mt-1">{activeCount} active</div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-secondary small">Employees</div>
+          <div class="display-6 fw-semibold">{employeeCount}</div>
+          <div class="text-secondary small">{activeCount} active</div>
+        </div>
+      </div>
     </div>
-    <div class="bg-white rounded-lg shadow-sm p-4">
-      <div class="text-sm text-slate-500">Utilization</div>
-      <div class="text-3xl font-semibold">{utilizationPct}%</div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-secondary small">Utilization</div>
+          <div class="display-6 fw-semibold">{utilizationPct}%</div>
+        </div>
+      </div>
     </div>
-    <div class="bg-white rounded-lg shadow-sm p-4">
-      <div class="text-sm text-slate-500">Lost / retired</div>
-      <div class="text-3xl font-semibold">{(assetStats.lost ?? 0) + (assetStats.retired ?? 0)}</div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="text-secondary small">Lost / retired</div>
+          <div class="display-6 fw-semibold">{(assetStats.lost ?? 0) + (assetStats.retired ?? 0)}</div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <h2 class="text-lg font-medium mb-3">Assets by status</h2>
-  <div class="bg-white rounded-lg shadow-sm p-4">
-    <ul class="divide-y">
+  <h2 class="h5 mb-3">Assets by status</h2>
+  <div class="card shadow-sm">
+    <ul class="list-group list-group-flush">
       {statusOrder.filter(s => assetStats[s]).map(s => (
-        <li class="py-2 flex items-center justify-between">
+        <li class="list-group-item d-flex align-items-center justify-content-between">
           <StatusBadge status={s} />
-          <span class="font-mono">{assetStats[s]}</span>
+          <span class="font-monospace">{assetStats[s]}</span>
         </li>
       ))}
     </ul>

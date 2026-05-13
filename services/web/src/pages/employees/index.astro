@@ -21,46 +21,56 @@ try {
 const departments = ["Engineering", "Marketing", "Finance", "Human Resources", "Operations", "Sales"];
 ---
 <Layout title="Employees">
-  <h1 class="text-2xl font-semibold mb-4">Employees</h1>
-  <form method="get" class="bg-white rounded-lg shadow-sm p-4 mb-4 flex flex-wrap gap-3 items-end text-sm">
-    <label class="flex flex-col">
-      <span class="text-slate-600 mb-1">Department</span>
-      <select name="department" class="border rounded px-2 py-1">
-        <option value="">All</option>
-        {departments.map(d => <option value={d} selected={d === department}>{d}</option>)}
-      </select>
-    </label>
-    <label class="flex items-center gap-2 mt-5">
-      <input type="checkbox" name="active" value="true" checked={onlyActive} />
-      <span>Active only</span>
-    </label>
-    <button class="rounded bg-slate-900 text-white px-3 py-1.5">Filter</button>
+  <h1 class="h3 mb-3">Employees</h1>
+  <form method="get" class="card shadow-sm mb-3">
+    <div class="card-body row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label small text-secondary mb-1">Department</label>
+        <select name="department" class="form-select form-select-sm">
+          <option value="">All</option>
+          {departments.map(d => <option value={d} selected={d === department}>{d}</option>)}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="active" value="true" checked={onlyActive} id="onlyActive" />
+          <label class="form-check-label" for="onlyActive">Active only</label>
+        </div>
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-dark btn-sm">Filter</button>
+      </div>
+    </div>
   </form>
-  {error && <div class="rounded border border-red-200 bg-red-50 text-red-900 p-3 text-sm mb-4">{error}</div>}
-  <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-    <table class="w-full text-sm">
-      <thead class="bg-slate-100 text-slate-700">
-        <tr>
-          <th class="text-left px-3 py-2">Name</th>
-          <th class="text-left px-3 py-2">Email</th>
-          <th class="text-left px-3 py-2">Department</th>
-          <th class="text-left px-3 py-2">Title</th>
-          <th class="text-left px-3 py-2">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {employees.map(e => (
-          <tr class="border-t hover:bg-slate-50">
-            <td class="px-3 py-2"><a class="underline" href={`/employees/${e.id}`}>{e.firstName} {e.lastName}</a></td>
-            <td class="px-3 py-2 text-slate-600">{e.email}</td>
-            <td class="px-3 py-2">{e.department}</td>
-            <td class="px-3 py-2">{e.title}</td>
-            <td class="px-3 py-2">
-              {e.active ? <span class="text-emerald-700">Active</span> : <span class="text-slate-500">Inactive</span>}
-            </td>
+  {error && <div class="alert alert-danger">{error}</div>}
+  <div class="card shadow-sm">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Department</th>
+            <th>Title</th>
+            <th>Status</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {employees.map(e => (
+            <tr>
+              <td><a class="link-dark" href={`/employees/${e.id}`}>{e.firstName} {e.lastName}</a></td>
+              <td class="text-secondary">{e.email}</td>
+              <td>{e.department}</td>
+              <td>{e.title}</td>
+              <td>
+                {e.active
+                  ? <span class="badge bg-success-subtle text-success-emphasis">Active</span>
+                  : <span class="badge bg-secondary-subtle text-secondary-emphasis">Inactive</span>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   </div>
 </Layout>
