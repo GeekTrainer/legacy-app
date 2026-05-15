@@ -34,7 +34,8 @@ venv/
 *.db-journal
 *.sqlite
 *.sqlite-journal
-data/
+services/*/data/
+!services/*/Data/
 
 # IDE
 .idea/
