@@ -49,37 +49,37 @@ const statusOrder = ["available", "assigned", "retired", "lost"];
 
   <div class="row g-3 mb-4">
     <div class="col-sm-6 col-lg-3">
-      <div class="card shadow-sm h-100">
+      <a href="/assets" class="card shadow-sm h-100 text-decoration-none text-reset dashboard-card">
         <div class="card-body">
           <div class="text-secondary small">Total assets</div>
           <div class="display-6 fw-semibold">{totalAssets}</div>
         </div>
-      </div>
+      </a>
     </div>
     <div class="col-sm-6 col-lg-3">
-      <div class="card shadow-sm h-100">
+      <a href="/employees" class="card shadow-sm h-100 text-decoration-none text-reset dashboard-card">
         <div class="card-body">
           <div class="text-secondary small">Employees</div>
           <div class="display-6 fw-semibold">{employeeCount}</div>
           <div class="text-secondary small">{activeCount} active</div>
         </div>
-      </div>
+      </a>
     </div>
     <div class="col-sm-6 col-lg-3">
-      <div class="card shadow-sm h-100">
+      <a href="/reports" class="card shadow-sm h-100 text-decoration-none text-reset dashboard-card">
         <div class="card-body">
           <div class="text-secondary small">Utilization</div>
           <div class="display-6 fw-semibold">{utilizationPct}%</div>
         </div>
-      </div>
+      </a>
     </div>
     <div class="col-sm-6 col-lg-3">
-      <div class="card shadow-sm h-100">
+      <a href="/assets?status=lost" class="card shadow-sm h-100 text-decoration-none text-reset dashboard-card">
         <div class="card-body">
           <div class="text-secondary small">Lost / retired</div>
           <div class="display-6 fw-semibold">{(assetStats.lost ?? 0) + (assetStats.retired ?? 0)}</div>
         </div>
-      </div>
+      </a>
     </div>
   </div>
 
@@ -87,11 +87,16 @@ const statusOrder = ["available", "assigned", "retired", "lost"];
   <div class="card shadow-sm">
     <ul class="list-group list-group-flush">
       {statusOrder.filter(s => assetStats[s]).map(s => (
-        <li class="list-group-item d-flex align-items-center justify-content-between">
+        <a href={`/assets?status=${s}`} class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
           <StatusBadge status={s} />
           <span class="font-monospace">{assetStats[s]}</span>
-        </li>
+        </a>
       ))}
     </ul>
   </div>
 </Layout>
+
+<style>
+  .dashboard-card { transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out; }
+  .dashboard-card:hover { transform: translateY(-2px); box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1) !important; }
+</style>
