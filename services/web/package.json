@@ -10,14 +10,14 @@
     "preview": "astro preview --host 0.0.0.0 --port 4321"
   },
   "dependencies": {
-    "astro": "^4.10.2",
-    "@astrojs/node": "^8.3.0",
-    "@astrojs/react": "^3.6.0",
-    "bootstrap": "^5.3.3",
+    "astro": "^6.3.4",
+    "@astrojs/node": "^10.1.1",
+    "@astrojs/react": "^5.0.5",
+    "bootstrap": "^5.3.8",
     "@popperjs/core": "^2.11.8",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0"
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3"
   }
 }
