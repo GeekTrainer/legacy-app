@@ -43,3 +43,10 @@ services/*/data/
 !.vscode/extensions.json
 !.vscode/tasks.json
 .playwright-mcp/
+
+# .NET incremental build cache
+*.lscache
+dotnet/runfile-discovery/
+
+# Python editable-install metadata
+*.egg-info/

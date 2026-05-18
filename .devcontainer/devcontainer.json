@@ -2,12 +2,8 @@
   "name": "AssetTrack polyglot",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
   "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {
-      "moby": true,
-      "dockerDashComposeVersion": "v2"
-    },
     "ghcr.io/devcontainers/features/node:1": {
-      "version": "20"
+      "version": "22"
     },
     "ghcr.io/devcontainers/features/dotnet:2": {
       "version": "8.0"
@@ -17,6 +13,7 @@
     },
     "ghcr.io/devcontainers/features/java:1": {
       "version": "21",
+      "additionalVersions": "11",
       "installMaven": true,
       "mavenVersion": "3.9.6"
     }
@@ -34,18 +31,16 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        "ms-azuretools.vscode-docker",
         "vscjava.vscode-java-pack",
         "ms-dotnettools.csdevkit",
         "ms-python.python",
         "ms-python.vscode-pylance",
         "astro-build.astro-vscode",
-        "bradlc.vscode-tailwindcss",
         "github.copilot",
         "github.copilot-chat"
       ]
     }
   },
-  "postCreateCommand": "docker compose build --parallel || true",
+  "postCreateCommand": "npm install && npm run install:all || true",
   "remoteUser": "vscode"
 }
