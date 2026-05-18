@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Runs a command with JAVA_HOME pointing at a Java 11 install on this system.
+# Used by audit-svc and auth-svc (Spring Boot 2.7 / Java 11) when the rest of
+# the toolchain (workforce-svc) is on Java 21.
+set -euo pipefail
+
+# Prefer SDKman's Java 11 if present (devcontainer setup).
+if [[ -d /usr/local/sdkman/candidates/java ]]; then
+  J11=$(ls -1d /usr/local/sdkman/candidates/java/11.*-* 2>/dev/null | head -1 || true)
+  if [[ -n "${J11:-}" && -x "$J11/bin/java" ]]; then
+    export JAVA_HOME="$J11"
+    export PATH="$JAVA_HOME/bin:$PATH"
+    exec "$@"
+  fi
+fi
+
+# Fallback: typical Linux locations.
+for cand in /usr/lib/jvm/temurin-11-jdk-* /usr/lib/jvm/java-11-openjdk-* /opt/java/openjdk-11 ; do
+  if [[ -x "$cand/bin/java" ]]; then
+    export JAVA_HOME="$cand"
+    export PATH="$JAVA_HOME/bin:$PATH"
+    exec "$@"
+  fi
+done
+
+echo "with-java11: no Java 11 install found. Install via SDKman: 'sdk install java 11.0.25-tem'" >&2
+exit 1

@@ -1,32 +1,117 @@
 # AssetTrack (Contoso Industries)
 
-AssetTrack is an internal application used by Contoso Industries to track equipment and employee assignments.
+AssetTrack is Contoso Industries' internal application for tracking hardware assets (laptops, monitors, phones, badges, docking stations) and the employees they're assigned to. It is intentionally built as a **polyglot microservices** application so that course learners can practice agentic, Copilot-driven development across a realistic multi-language stack — including a couple of older Java services that still need modernization.
 
-## Run locally
+## Architecture at a glance
 
-1. Ensure Java 11 and Maven are installed.
-2. Start the app:
+```mermaid
+flowchart LR
+    browser([Browser]) --> web
 
-```bash
-mvn spring-boot:run
+    subgraph frontend
+      web[web<br/>Astro SSR + React islands]
+    end
+
+    subgraph modern[Modern services]
+      assets[assets-svc<br/>.NET 8]
+      workforce[workforce-svc<br/>Java 21 / Spring Boot 3]
+      reporting[reporting-svc<br/>Python FastAPI]
+      notifications[notifications-svc<br/>Python FastAPI]
+    end
+
+    subgraph legacy[Legacy services - intentionally dated]
+      audit[audit-svc<br/>Java 11 / Spring Boot 2.7]
+      auth[auth-svc<br/>Java 11 / Spring Boot 2.7]
+    end
+
+    web --> assets
+    web --> workforce
+    web --> reporting
+    web --> auth
+    workforce -.audit hook<br/>not yet wired.-> audit
+    workforce --> notifications
+    assets -.JWKs.-> auth
+    workforce -.JWKs.-> auth
 ```
 
-3. Open http://localhost:8080
+All services talk over **REST/JSON**. Each service owns its own SQLite database.
 
-The application uses SQLite and initializes schema/data on startup.
+| Service              | Stack                                  | Port  | Owns                                |
+|----------------------|----------------------------------------|-------|-------------------------------------|
+| `web`                | Astro (SSR) + React islands + Bootstrap 5 | 4321  | UI, BFF composition                 |
+| `assets-svc`         | .NET 8 (ASP.NET Core minimal APIs)     | 5001  | Asset CRUD + search                 |
+| `workforce-svc`      | Java 21 / Spring Boot 3                | 5002  | Employees + Assignments             |
+| `reporting-svc`      | Python 3.12 / FastAPI                  | 5003  | Reports, CSV bulk import            |
+| `notifications-svc`  | Python 3.12 / FastAPI                  | 5004  | Webhook receiver, email/Slack stub  |
+| `audit-svc`          | Java 11 / Spring Boot 2.7 *(legacy)*   | 5005  | Audit event log                     |
+| `auth-svc`           | Java 11 / Spring Boot 2.7 *(legacy)*   | 5006  | JWT issuer, user lookup             |
 
-## Architecture (in progress)
+## Quick start (Codespaces or local devcontainer)
 
-- Spring Boot MVC with Thymeleaf views
-- JDBC repositories and service layer
-- PostgreSQL storage (legacy note, needs cleanup)
-- Planned `/api/reports` endpoint for reporting (TODO: add more details here)
+1. Open the repository in GitHub Codespaces, or in VS Code with the Dev Containers extension.
+2. Wait for the devcontainer to finish provisioning. It installs:
+   - Node 22, .NET 8, Python 3.12, Maven, and **two Java JDKs side-by-side** (Java 21 for modern services, Java 11 for the two legacy services).
+   - `concurrently` and editable Python installs for the FastAPI services (via `postCreateCommand`).
+3. From the workspace root:
 
-## What is currently included
+   ```bash
+   npm run dev
+   ```
 
-- Dashboard with summary counts
-- Asset listing/detail pages
-- Employee listing/detail pages
-- Assignment tracking page
+   This starts all seven services as plain processes (no Docker required). A startup banner prints the URL. Run `npm run dev:verbose` if you need full log output instead of WARN-only.
 
-TODO: add more details here.
+4. Open http://localhost:4321 — that's the UI. Backend services listen on 5001–5006 if you want to hit them directly with `curl`.
+
+## Quick start (local without a devcontainer)
+
+You need Node 22, .NET 8, Python 3.12, Maven, **and both Java 21 and Java 11** on your machine. Then:
+
+```bash
+npm install
+npm run install:all
+npm run dev
+```
+
+## Running with Docker (optional)
+
+A `docker-compose.yml` is still provided as an alternative to the dockerless workflow:
+
+```bash
+docker compose up --build
+```
+
+Open http://localhost:4321.
+
+## Running a single service for development
+
+Each service folder has its own `README.md` with native (non-Docker) run instructions and per-service scripts. See:
+
+- [`services/web/README.md`](services/web/README.md)
+- [`services/assets-svc/README.md`](services/assets-svc/README.md)
+- [`services/workforce-svc/README.md`](services/workforce-svc/README.md)
+- [`services/reporting-svc/README.md`](services/reporting-svc/README.md)
+- [`services/notifications-svc/README.md`](services/notifications-svc/README.md)
+- [`services/audit-svc/README.md`](services/audit-svc/README.md)
+- [`services/auth-svc/README.md`](services/auth-svc/README.md)
+
+## Auth
+
+`auth-svc` issues RS256 JWTs from `POST /token`. Other services validate tokens via the JWKs document at `http://auth-svc:8080/.well-known/jwks`.
+
+For course exercises that aren't about auth, the frontend runs with `DEV_TOKEN_MODE=true`, which uses a pre-issued long-lived token so learners aren't blocked by login flows. To exercise the real flow, set it to `false`.
+
+## What's intentionally broken or missing
+
+This is a teaching codebase. Several services have deliberate gaps that drive the course exercises (see [`exercises.md`](exercises.md)). For example:
+
+- The two legacy Java services use raw JDBC string concatenation and have SQL injection.
+- `reporting-svc` has old-style Python helpers and an import endpoint that crashes on bad rows.
+- `assets-svc` accepts unvalidated input on create.
+- The dashboard renders some status badges with the wrong colors.
+- `workforce-svc` does not yet POST to `audit-svc` on assignment changes.
+
+See [`exercises.md`](exercises.md) for the full exercise list.
+
+## Course exercises
+
+See [`exercises.md`](exercises.md). Each exercise is **atomic** — completing one is not a prerequisite for another. Exercises cover all five stacks (Astro, .NET, modern Java, Python, legacy Java) so learners can pick what's most useful to them.
