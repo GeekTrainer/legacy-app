@@ -38,7 +38,7 @@ All services talk over **REST/JSON**. Each service owns its own SQLite database.
 
 | Service              | Stack                                  | Port  | Owns                                |
 |----------------------|----------------------------------------|-------|-------------------------------------|
-| `web`                | Astro (SSR) + React islands + Tailwind | 4321  | UI, BFF composition                 |
+| `web`                | Astro (SSR) + React islands + Bootstrap 5 | 4321  | UI, BFF composition                 |
 | `assets-svc`         | .NET 8 (ASP.NET Core minimal APIs)     | 5001  | Asset CRUD + search                 |
 | `workforce-svc`      | Java 21 / Spring Boot 3                | 5002  | Employees + Assignments             |
 | `reporting-svc`      | Python 3.12 / FastAPI                  | 5003  | Reports, CSV bulk import            |
@@ -46,21 +46,35 @@ All services talk over **REST/JSON**. Each service owns its own SQLite database.
 | `audit-svc`          | Java 11 / Spring Boot 2.7 *(legacy)*   | 5005  | Audit event log                     |
 | `auth-svc`           | Java 11 / Spring Boot 2.7 *(legacy)*   | 5006  | JWT issuer, user lookup             |
 
-## Quick start (Codespaces)
+## Quick start (Codespaces or local devcontainer)
 
-1. Open the repository in GitHub Codespaces.
-2. Wait for the devcontainer to finish provisioning (Docker-in-Docker, .NET 8, Java 21, Python 3.12, Node 20 are all preinstalled).
+1. Open the repository in GitHub Codespaces, or in VS Code with the Dev Containers extension.
+2. Wait for the devcontainer to finish provisioning. It installs:
+   - Node 22, .NET 8, Python 3.12, Maven, and **two Java JDKs side-by-side** (Java 21 for modern services, Java 11 for the two legacy services).
+   - `concurrently` and editable Python installs for the FastAPI services (via `postCreateCommand`).
 3. From the workspace root:
 
    ```bash
-   docker compose up --build
+   npm run dev
    ```
 
-4. Open the forwarded port for `web` (4321) — that's the UI. The other ports are the backend services if you want to poke them directly with `curl`.
+   This starts all seven services as plain processes (no Docker required). A startup banner prints the URL. Run `npm run dev:verbose` if you need full log output instead of WARN-only.
 
-## Quick start (local)
+4. Open http://localhost:4321 — that's the UI. Backend services listen on 5001–5006 if you want to hit them directly with `curl`.
 
-You need Docker. Then:
+## Quick start (local without a devcontainer)
+
+You need Node 22, .NET 8, Python 3.12, Maven, **and both Java 21 and Java 11** on your machine. Then:
+
+```bash
+npm install
+npm run install:all
+npm run dev
+```
+
+## Running with Docker (optional)
+
+A `docker-compose.yml` is still provided as an alternative to the dockerless workflow:
 
 ```bash
 docker compose up --build

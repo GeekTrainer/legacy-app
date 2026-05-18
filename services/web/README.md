@@ -1,4 +1,4 @@
-# web (Astro SSR + React islands + Tailwind)
+# web (Astro SSR + React islands + Bootstrap 5)
 
 The AssetTrack UI. Renders pages server-side and calls all backend services from the Astro server (BFF pattern). No data access from the browser.
 
