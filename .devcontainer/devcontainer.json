@@ -41,6 +41,6 @@
       ]
     }
   },
-  "postCreateCommand": "npm install && npm run install:all || true",
+  "postCreateCommand": "npm install -g @github/copilot-cli && npm install && npm run install:all || true",
   "remoteUser": "vscode"
 }
