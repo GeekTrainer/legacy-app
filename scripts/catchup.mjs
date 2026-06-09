@@ -5,28 +5,29 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-const defaultSourceRepoUrl = 'https://github.com/GeekTrainer/advanced-copilot-cli';
+const defaultAssetsRepoUrl = 'https://github.com/GeekTrainer/advanced-copilot-cli';
 
 function usage() {
-  console.log(`Usage: node catchup.mjs --asset-path <path> [--source-repo-url <url>] [--source-ref <ref>] [--source-path <path>] [--force] [target-repo]
+  console.log(`Usage: node catchup.mjs --assets-path <path> [--assets-repo-url <url>] [--assets-repo-branch-name <name>] [--assets-local-path <path>] [--force]
 
 Copies catch-up assets into an AssetTrack repository root.
-Run from the AssetTrack repository root, or pass the repository path as target-repo.
+Run from the AssetTrack repository root.
 
 Options:
-  --source-repo-url <url>  Git repository URL to clone assets from.
-                           Defaults to ${defaultSourceRepoUrl}.
-  --source-ref <ref>       Branch or tag to clone. Defaults to main.
-  --source-path <path>     Local course repository root or asset directory to copy from instead of Git.
-  --asset-path <path>      Asset directory inside the source repository, such as assets/03.
+  --assets-repo-url <url>  Git repository URL to clone assets from.
+                           Defaults to ${defaultAssetsRepoUrl}.
+  --assets-repo-branch-name <name>
+                           Source repository branch to clone. Defaults to main.
+  --assets-local-path <path>
+                           Local course repository root or asset directory to copy from instead of Git.
+  --assets-path <path>     Asset directory inside the source repository, such as assets/03.
   --force, -f              Overwrite existing catch-up files.
   --help, -h               Show this help.
 `);
 }
 
 function fail(message) {
-  console.error(message);
-  process.exit(1);
+  throw new Error(message);
 }
 
 function takeValue(args, index, flag) {
@@ -39,34 +40,35 @@ function takeValue(args, index, flag) {
 
 function parseArgs(args) {
   const options = {
-    sourceRepoUrl: defaultSourceRepoUrl,
-    sourceRepoUrlProvided: false,
-    sourceRef: 'main',
-    sourcePath: '',
-    assetPath: '',
+    assetsRepoUrl: defaultAssetsRepoUrl,
+    assetsRepoUrlProvided: false,
+    assetsRepoBranchName: 'main',
+    assetsRepoBranchNameProvided: false,
+    assetsLocalPath: '',
+    assetsPath: '',
     force: false,
-    targetRepo: process.cwd(),
   };
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
 
     switch (arg) {
-      case '--source-repo-url':
-        options.sourceRepoUrl = takeValue(args, index, arg);
-        options.sourceRepoUrlProvided = true;
+      case '--assets-repo-url':
+        options.assetsRepoUrl = takeValue(args, index, arg);
+        options.assetsRepoUrlProvided = true;
         index += 1;
         break;
-      case '--source-ref':
-        options.sourceRef = takeValue(args, index, arg);
+      case '--assets-repo-branch-name':
+        options.assetsRepoBranchName = takeValue(args, index, arg);
+        options.assetsRepoBranchNameProvided = true;
         index += 1;
         break;
-      case '--source-path':
-        options.sourcePath = takeValue(args, index, arg);
+      case '--assets-local-path':
+        options.assetsLocalPath = takeValue(args, index, arg);
         index += 1;
         break;
-      case '--asset-path':
-        options.assetPath = takeValue(args, index, arg);
+      case '--assets-path':
+        options.assetsPath = takeValue(args, index, arg);
         index += 1;
         break;
       case '--force':
@@ -83,33 +85,32 @@ function parseArgs(args) {
           fail(`Unknown option: ${arg}`);
         }
 
-        if (options.targetRepo !== process.cwd()) {
-          fail(`Unexpected extra argument: ${arg}`);
-        }
-
-        options.targetRepo = arg;
-        break;
+        fail(`Unexpected argument: ${arg}. Run this script from the AssetTrack repository root.`);
     }
   }
 
-  if (options.sourcePath && options.sourceRepoUrlProvided) {
-    fail('Use either --source-path or --source-repo-url, not both.');
+  if (options.assetsLocalPath && options.assetsRepoUrlProvided) {
+    fail('Use either --assets-local-path or --assets-repo-url, not both.');
   }
 
-  if (!options.assetPath) {
-    fail('--asset-path is required.');
+  if (options.assetsLocalPath && options.assetsRepoBranchNameProvided) {
+    fail('Use --assets-repo-branch-name only when cloning assets from --assets-repo-url.');
   }
 
-  options.assetPath = normalizeAssetPath(options.assetPath);
+  if (!options.assetsPath) {
+    fail('--assets-path is required.');
+  }
+
+  options.assetsPath = normalizeAssetsPath(options.assetsPath);
   return options;
 }
 
-function normalizeAssetPath(assetPath) {
-  const normalized = assetPath.replaceAll('\\', '/').replace(/^\/+|\/+$/g, '');
+function normalizeAssetsPath(assetsPath) {
+  const normalized = assetsPath.replaceAll('\\', '/').replace(/^\/+|\/+$/g, '');
   const parts = normalized.split('/').filter(Boolean);
 
   if (parts.length === 0 || parts.includes('..')) {
-    fail('--asset-path must be a relative path inside the source repository.');
+    fail('--assets-path must be a relative path inside the source repository.');
   }
 
   return parts.join('/');
@@ -122,11 +123,10 @@ Expected to find package.json and services/.`);
   }
 }
 
-function run(command, args, options = {}) {
+function run(command, args) {
   const result = spawnSync(command, args, {
     encoding: 'utf8',
     stdio: 'pipe',
-    ...options,
   });
 
   if (result.error) {
@@ -139,19 +139,19 @@ function run(command, args, options = {}) {
   }
 }
 
-function resolveLocalAssetRoot(sourcePath, assetPath) {
-  const sourceRoot = path.resolve(sourcePath);
-  const repoAssetRoot = path.join(sourceRoot, ...assetPath.split('/'));
+function resolveLocalAssetRoot(assetsLocalPath, assetsPath) {
+  const sourceRoot = path.resolve(assetsLocalPath);
+  const repoAssetRoot = path.join(sourceRoot, ...assetsPath.split('/'));
 
   if (fs.existsSync(repoAssetRoot) && fs.statSync(repoAssetRoot).isDirectory()) {
     return { assetRoot: repoAssetRoot, sourceLabel: sourceRoot };
   }
 
-  if (pathEndsWith(sourceRoot, assetPath)) {
+  if (pathEndsWith(sourceRoot, assetsPath)) {
     return { assetRoot: sourceRoot, sourceLabel: sourceRoot };
   }
 
-  fail(`Could not find ${assetPath} in the local source path: ${sourceRoot}`);
+  fail(`Could not find ${assetsPath} in the local source path: ${sourceRoot}`);
 }
 
 function pathEndsWith(filePath, relativePath) {
@@ -165,7 +165,7 @@ function pathEndsWith(filePath, relativePath) {
   return relativeParts.every((part, index) => part === fileParts[fileParts.length - relativeParts.length + index]);
 }
 
-function cloneAssetSource(sourceRepoUrl, sourceRef, assetPath, tempRoot) {
+function cloneAssetSource(assetsRepoUrl, assetsRepoBranchName, assetsPath, tempRoot) {
   const cloneRoot = path.join(tempRoot, 'source-repo');
 
   run('git', [
@@ -174,23 +174,23 @@ function cloneAssetSource(sourceRepoUrl, sourceRef, assetPath, tempRoot) {
     '--depth',
     '1',
     '--branch',
-    sourceRef,
+    assetsRepoBranchName,
     '--filter=blob:none',
     '--sparse',
-    sourceRepoUrl,
+    assetsRepoUrl,
     cloneRoot,
   ]);
 
-  run('git', ['-C', cloneRoot, 'sparse-checkout', 'set', '--cone', assetPath]);
+  run('git', ['-C', cloneRoot, 'sparse-checkout', 'set', '--cone', assetsPath]);
 
-  const assetRoot = path.join(cloneRoot, ...assetPath.split('/'));
+  const assetRoot = path.join(cloneRoot, ...assetsPath.split('/'));
   if (!fs.existsSync(assetRoot) || !fs.statSync(assetRoot).isDirectory()) {
-    fail(`Could not find ${assetPath} in the source repository.`);
+    fail(`Could not find ${assetsPath} in the source repository.`);
   }
 
   return {
     assetRoot,
-    sourceLabel: sourceRepoUrl.replace(/\/$/, '').replace(/\.git$/, ''),
+    sourceLabel: assetsRepoUrl.replace(/\/$/, '').replace(/\.git$/, ''),
   };
 }
 
@@ -219,6 +219,7 @@ function collectFiles(root) {
 }
 
 function copyFiles(assetRoot, targetRoot, sourceFiles, force) {
+  const targetRealRoot = fs.realpathSync(targetRoot);
   const existing = sourceFiles.filter((relativePath) => fs.existsSync(path.join(targetRoot, relativePath)));
 
   if (!force && existing.length > 0) {
@@ -229,39 +230,87 @@ ${existing.map((file) => `  ${file}`).join('\n')}`);
   for (const relativePath of sourceFiles) {
     const source = path.join(assetRoot, relativePath);
     const destination = path.join(targetRoot, relativePath);
-    fs.mkdirSync(path.dirname(destination), { recursive: true });
+    ensureSafeDestination(targetRoot, targetRealRoot, destination);
     fs.copyFileSync(source, destination);
   }
 }
 
+function ensureSafeDestination(targetRoot, targetRealRoot, destination) {
+  const destinationParent = path.dirname(destination);
+  rejectSymlinkComponents(targetRoot, destinationParent);
+  fs.mkdirSync(destinationParent, { recursive: true });
+  rejectSymlink(destination);
+  ensureInsideRoot(targetRealRoot, fs.realpathSync(destinationParent));
+}
+
+function rejectSymlinkComponents(targetRoot, filePath) {
+  const relativePath = path.relative(targetRoot, filePath);
+  if (relativePath === '') {
+    rejectSymlink(targetRoot);
+    return;
+  }
+
+  let current = targetRoot;
+  for (const part of relativePath.split(path.sep)) {
+    current = path.join(current, part);
+    rejectSymlink(current);
+  }
+}
+
+function rejectSymlink(filePath) {
+  if (fs.existsSync(filePath) && fs.lstatSync(filePath).isSymbolicLink()) {
+    fail(`Refusing to write through symlink: ${filePath}`);
+  }
+}
+
+function ensureInsideRoot(targetRealRoot, filePath) {
+  const relative = path.relative(targetRealRoot, filePath);
+  if (relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))) {
+    return;
+  }
+
+  fail(`Refusing to write outside target repository: ${filePath}`);
+}
+
 function main() {
   const options = parseArgs(process.argv.slice(2));
-  const targetRoot = path.resolve(options.targetRepo);
+  const targetRoot = process.cwd();
   ensureAssetTrackRoot(targetRoot);
 
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'catchup-'));
+  let tempRoot;
 
   try {
-    const source = options.sourcePath
-      ? resolveLocalAssetRoot(options.sourcePath, options.assetPath)
-      : cloneAssetSource(options.sourceRepoUrl, options.sourceRef, options.assetPath, tempRoot);
+    let source;
+    if (options.assetsLocalPath) {
+      source = resolveLocalAssetRoot(options.assetsLocalPath, options.assetsPath);
+    } else {
+      tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'catchup-'));
+      source = cloneAssetSource(options.assetsRepoUrl, options.assetsRepoBranchName, options.assetsPath, tempRoot);
+    }
 
     const sourceFiles = collectFiles(source.assetRoot);
     if (sourceFiles.length === 0) {
-      fail(`No files found in ${options.assetPath}.`);
+      fail(`No files found in ${options.assetsPath}.`);
     }
 
     copyFiles(source.assetRoot, targetRoot, sourceFiles, options.force);
 
-    console.log(`Catch-up assets copied from ${source.sourceLabel} ${options.assetPath} to ${targetRoot}, excluding scripts/ directories.`);
+    console.log(`Catch-up assets copied from ${source.sourceLabel} ${options.assetsPath} to ${targetRoot}, excluding scripts/ directories.`);
     console.log('');
     console.log('Next verification steps from the AssetTrack repository root:');
     console.log('  1. Run /instructions and confirm repo and scoped instructions are loaded.');
     console.log('  2. Run /agent and confirm accessibility-updater is available.');
     console.log('  3. Run /skills and confirm make-repo-contribution is available.');
   } finally {
-    fs.rmSync(tempRoot, { recursive: true, force: true });
+    if (tempRoot) {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
   }
 }
 
-main();
+try {
+  main();
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  process.exitCode = 1;
+}
