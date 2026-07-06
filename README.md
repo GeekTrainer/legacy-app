@@ -9,7 +9,7 @@ flowchart LR
     browser([Browser]) --> web
 
     subgraph frontend
-      web[web<br/>Astro SSR + React islands]
+      web[web<br/>Astro SSR + Bootstrap 5]
     end
 
     subgraph modern[Modern services]
@@ -34,11 +34,11 @@ flowchart LR
     workforce -.JWKs.-> auth
 ```
 
-All services talk over **REST/JSON**. Each service owns its own SQLite database.
+All services talk over **REST/JSON**. Most backend services own a local SQLite database; `web` is stateless, and `reporting-svc` reads live data from other services instead of owning a primary database.
 
 | Service              | Stack                                  | Port  | Owns                                |
 |----------------------|----------------------------------------|-------|-------------------------------------|
-| `web`                | Astro (SSR) + React islands + Bootstrap 5 | 4321  | UI, BFF composition                 |
+| `web`                | Astro (SSR) + Bootstrap 5             | 4321  | UI, BFF composition                 |
 | `assets-svc`         | .NET 8 (ASP.NET Core minimal APIs)     | 5001  | Asset CRUD + search                 |
 | `workforce-svc`      | Java 21 / Spring Boot 3                | 5002  | Employees + Assignments             |
 | `reporting-svc`      | Python 3.12 / FastAPI                  | 5003  | Reports, CSV bulk import            |
@@ -82,9 +82,11 @@ docker compose up --build
 
 Open http://localhost:4321.
 
-## Running a single service for development
+## Repository tour
 
-Each service folder has its own `README.md` with native (non-Docker) run instructions and per-service scripts. See:
+See [`ARCHITECTURE.md`](ARCHITECTURE.md) for a structured repo tour: purpose, modules, entry points, data layers, scripts, and known gaps for each stack.
+
+Each service folder also has its own `README.md` with native (non-Docker) run instructions and per-service scripts. See:
 
 - [`services/web/README.md`](services/web/README.md)
 - [`services/assets-svc/README.md`](services/assets-svc/README.md)
