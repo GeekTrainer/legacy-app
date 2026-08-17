@@ -1,0 +1,214 @@
+name: ACC content changed (dispatch receiver)
+
+# Receives repository_dispatch from the ACC course repo when module content
+# changes, and proposes an updated delta store as a PR (agent proposes; human +
+# CI dispose). See course-build/REFS.md for the payload contract.
+#
+# Flow: validate payload -> checkout ACC@acc_sha -> invoke ACC module-runner for
+# the affected module -> regenerate downstream range (N+1..07) into staging ->
+# commit updated delta patches on a branch -> open PR. App-code cascade conflicts
+# (M05/M06) are flagged for human resolution and never auto-resolved.
+
+on:
+  repository_dispatch:
+    types: [acc-content-changed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  # One regen at a time per affected module to avoid racing staging refs.
+  group: acc-regen-${{ github.event.client_payload.affected_module }}
+  cancel-in-progress: false
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    env:
+      ACC_SHA: ${{ github.event.client_payload.acc_sha }}
+      ACC_REF: ${{ github.event.client_payload.acc_ref }}
+      AFFECTED_MODULE: ${{ github.event.client_payload.affected_module }}
+      ACC_VERSION: ${{ github.event.client_payload.acc_version }}
+      REASON: ${{ github.event.client_payload.reason }}
+      DISPATCH_ID: ${{ github.event.client_payload.dispatch_id }}
+      # Integration points relayed by the ACC session; set as repo variables.
+      #   ACC_REPO             e.g. GeekTrainer/advanced-copilot-cli
+      #   ACC_MODULE_RUNNER_CMD template, e.g.
+      #       "node module-runner.mjs --module {module} --target-repo {target} --out {out}"
+      ACC_REPO: ${{ vars.ACC_REPO }}
+      ACC_MODULE_RUNNER_CMD: ${{ vars.ACC_MODULE_RUNNER_CMD }}
+    steps:
+      - name: Validate payload
+        run: |
+          set -euo pipefail
+          echo "acc_sha=$ACC_SHA affected_module=$AFFECTED_MODULE reason=$REASON dispatch_id=$DISPATCH_ID"
+          case "$ACC_SHA" in
+            *[!0-9a-fA-F]* | "" ) echo "::error::acc_sha must be a hex SHA"; exit 1;;
+          esac
+          if ! [ "$AFFECTED_MODULE" -ge 1 ] 2>/dev/null || [ "$AFFECTED_MODULE" -gt 7 ]; then
+            echo "::error::affected_module must be an integer 1..7"; exit 1
+          fi
+
+      - name: Normalize inputs
+        id: norm
+        run: |
+          set -euo pipefail
+          DID="${DISPATCH_ID:-$(date -u +%Y%m%d)-${{ github.run_id }}}"
+          VER="${ACC_VERSION:-$(date -u +%Y-%m)}"
+          FROM=$(( AFFECTED_MODULE + 1 ))   # downstream range start (module numbers)
+          echo "dispatch_id=$DID" >> "$GITHUB_OUTPUT"
+          echo "acc_version=$VER" >> "$GITHUB_OUTPUT"
+          echo "from_module=$FROM" >> "$GITHUB_OUTPUT"
+          echo "branch=regen/${DID}/proposal" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout legacy-app
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: legacy-app
+
+      - name: Checkout ACC @ acc_sha
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.ACC_REPO }}
+          ref: ${{ env.ACC_SHA }}
+          path: acc
+          fetch-depth: 0
+          # ACC may be private; provide a token via repo secret if so.
+          token: ${{ secrets.ACC_READ_TOKEN || github.token }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Ensure base commit present
+        working-directory: legacy-app
+        run: git fetch --no-tags origin "$(node -e "console.log(require('./course-build/manifest.json').base.sha)")" || true
+
+      - name: Configure git identity
+        working-directory: legacy-app
+        run: |
+          git config user.name "acc-course-bot"
+          git config user.email "acc-course-bot@users.noreply.github.com"
+          git checkout -b "${{ steps.norm.outputs.branch }}"
+
+      - name: Invoke ACC module-runner to propose updated delta
+        id: runner
+        working-directory: legacy-app
+        run: |
+          set -euo pipefail
+          if [ -z "${ACC_MODULE_RUNNER_CMD:-}" ]; then
+            echo "::warning::ACC_MODULE_RUNNER_CMD not configured yet — skipping runner invocation."
+            echo "ran=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          OUT="$(mktemp -d)"
+          TARGET="$PWD"
+          CMD="${ACC_MODULE_RUNNER_CMD//\{module\}/$AFFECTED_MODULE}"
+          CMD="${CMD//\{target\}/$TARGET}"
+          CMD="${CMD//\{out\}/$OUT}"
+          echo "Running (in ../acc): $CMD"
+          ( cd "$GITHUB_WORKSPACE/acc" && bash -c "$CMD" )
+          # The runner is expected to write an updated ordered patch series for the
+          # affected module into $OUT. Stage it into the delta store.
+          MOD=$(printf 'module-%02d' "$AFFECTED_MODULE")
+          if compgen -G "$OUT/*.patch" > /dev/null; then
+            rm -f "course-build/deltas/$MOD/"*.patch || true
+            cp "$OUT"/*.patch "course-build/deltas/$MOD/"
+            echo "ran=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::module-runner produced no patches in $OUT"
+            echo "ran=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Regenerate downstream range into staging
+        id: regen
+        working-directory: legacy-app
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          node course-build/scripts/build-branches.mjs \
+            --dispatch-id "${{ steps.norm.outputs.dispatch_id }}" \
+            --from "${{ steps.norm.outputs.from_module }}"
+
+      - name: Detect app-code cascade conflicts
+        id: conflicts
+        working-directory: legacy-app
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.regen.outcome }}" = "success" ]; then
+            echo "conflict=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "conflict=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::Regeneration failed to apply cleanly — likely an app-code cascade conflict downstream of module $AFFECTED_MODULE. Flagging for human resolution."
+          fi
+
+      - name: Commit updated delta store
+        id: commit
+        working-directory: legacy-app
+        run: |
+          set -euo pipefail
+          git add course-build/deltas
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No delta changes produced."
+          else
+            git commit -m "regen: update delta store for ACC module ${AFFECTED_MODULE} @ ${ACC_SHA}" \
+              -m "acc_ref: ${ACC_REF}" -m "dispatch_id: ${{ steps.norm.outputs.dispatch_id }}"
+            git push origin "HEAD:${{ steps.norm.outputs.branch }}"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open / update PR
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: legacy-app
+        run: |
+          set -euo pipefail
+          CONFLICT="${{ steps.conflicts.outputs.conflict }}"
+          TITLE="regen: ACC module ${AFFECTED_MODULE} delta update (${{ steps.norm.outputs.acc_version }})"
+          LABELS="acc-regen"
+          BODY_FILE="$(mktemp)"
+          {
+            echo "Automated delta-store regeneration triggered by an ACC content change."
+            echo
+            echo "| field | value |"
+            echo "| ----- | ----- |"
+            echo "| affected module | ${AFFECTED_MODULE} |"
+            echo "| downstream range | start-of-module-${{ steps.norm.outputs.from_module }} .. start-of-module-07 |"
+            echo "| acc_sha | \`${ACC_SHA}\` |"
+            echo "| acc_ref | ${ACC_REF} |"
+            echo "| acc_version | ${{ steps.norm.outputs.acc_version }} |"
+            echo "| reason | ${REASON} |"
+            echo
+            if [ "$CONFLICT" = "true" ]; then
+              echo "> [!CAUTION]"
+              echo "> **Manual resolution required.** Regeneration hit a cascade conflict applying the stored downstream deltas on top of the updated module ${AFFECTED_MODULE} (app-code modules M05/M06 carry real code). The affected downstream delta(s) must be re-authored by a human before this can validate. App-code conflicts are never auto-resolved."
+            else
+              echo "> [!NOTE]"
+              echo "> Downstream chain regenerated and applied cleanly. Validation CI must still pass before promotion."
+            fi
+            echo
+            echo "On merge, \`promote-branches.yml\` will atomically move the \`start-of-module-N\` aliases and cut \`acc-${{ steps.norm.outputs.acc_version }}/start-of-module-N\` tags."
+          } > "$BODY_FILE"
+
+          if [ "$CONFLICT" = "true" ]; then LABELS="$LABELS,needs-human-resolution,app-code-conflict"; fi
+
+          # Ensure labels exist (ignore errors if they already do).
+          for l in $(echo "$LABELS" | tr ',' ' '); do gh label create "$l" -c "#B60205" -f >/dev/null 2>&1 || true; done
+
+          EXISTING=$(gh pr list --head "${{ steps.norm.outputs.branch }}" --json number --jq '.[0].number' || true)
+          if [ -n "$EXISTING" ]; then
+            gh pr edit "$EXISTING" --title "$TITLE" --body-file "$BODY_FILE" --add-label "$LABELS"
+          else
+            gh pr create --title "$TITLE" --body-file "$BODY_FILE" \
+              --base main --head "${{ steps.norm.outputs.branch }}" --label "$LABELS"
+          fi
+
+      - name: Fail the run if manual resolution is required
+        if: steps.conflicts.outputs.conflict == 'true'
+        run: |
+          echo "::error::Cascade conflict downstream of module ${AFFECTED_MODULE}; PR opened and flagged for human resolution."
+          exit 1
