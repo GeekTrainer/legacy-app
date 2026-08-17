@@ -98,15 +98,23 @@
     {
       "module": 4,
       "startBranch": "start-of-module-05",
-      "title": ".github/hooks lifecycle hooks",
-      "status": "pending-acc-content",
-      "source": { "kind": "module-runner", "sourceBranch": null },
+      "title": ".github/hooks lifecycle hooks (postToolUse + agentStop test-router)",
+      "status": "backfilled",
+      "source": {
+        "kind": "acc-assets",
+        "sourceBranch": null,
+        "note": "Deterministic: adds .github/hooks/scripts/test-router.sh (ACC blob fc8d073eb5324d77a817550f88f745a83eb696e1, mode 0755) and .github/hooks/hooks.json (mode 0644, canonical body from ACC content/04-lifecycle-hooks.md). Not agent-authored."
+      },
       "deltaDir": "deltas/module-04",
-      "patches": [],
-      "expectedTreeSha": null,
-      "expectedAssets": [".github/hooks"],
-      "touchesAppCode": false,
-      "needsFromAcc": "Lifecycle hook files under .github/hooks (contents + filenames) authored in ACC module 04."
+      "patches": [
+        "0001-feat-hooks-add-lifecycle-test-router-hook-hooks.json.patch"
+      ],
+      "expectedTreeSha": "9bb1cb347bb20bce703a9bd9fc1aefba7113f936",
+      "expectedAssets": [
+        ".github/hooks/hooks.json",
+        ".github/hooks/scripts/test-router.sh"
+      ],
+      "touchesAppCode": false
     },
     {
       "module": 5,

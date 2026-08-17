@@ -32,12 +32,20 @@ jobs:
       ACC_VERSION: ${{ github.event.client_payload.acc_version }}
       REASON: ${{ github.event.client_payload.reason }}
       DISPATCH_ID: ${{ github.event.client_payload.dispatch_id }}
-      # Integration points relayed by the ACC session; set as repo variables.
-      #   ACC_REPO             e.g. GeekTrainer/advanced-copilot-cli
-      #   ACC_MODULE_RUNNER_CMD template, e.g.
-      #       "node module-runner.mjs --module {module} --target-repo {target} --out {out}"
-      ACC_REPO: ${{ vars.ACC_REPO }}
-      ACC_MODULE_RUNNER_CMD: ${{ vars.ACC_MODULE_RUNNER_CMD }}
+      # Integration points — see course-build/OPERATIONS.md for provisioning.
+      #   ACC_REPO              ACC course repo (default below if var unset).
+      #   ACC_MODULE_RUNNER_CMD invocation template for ACC's module-runner skill.
+      #       module-runner is a Copilot skill (prompt-invoked via Copilot CLI),
+      #       not a standalone script. It takes named inputs module/base-ref/
+      #       acc-ref/repo/out, writes result.json, and exits 0=PASS 1=FAIL
+      #       2=usage 3=BLOCKED (ACC PR #18). Supported placeholders:
+      #       {module} {base-ref} {acc-ref} {repo} {target} {out}
+      ACC_REPO: ${{ vars.ACC_REPO || 'GeekTrainer/advanced-copilot-cli' }}
+      # module-runner is a Copilot skill invoked via Copilot CLI in seed mode.
+      # base-ref is computed here (zero-padded start-of-module-NN) and injected as
+      # {base-ref}; acc-ref is the pinned 40-char acc_sha ({acc_ref}). Ops may
+      # override via the ACC_MODULE_RUNNER_CMD repo variable (e.g. to pin --model).
+      ACC_MODULE_RUNNER_CMD: ${{ vars.ACC_MODULE_RUNNER_CMD || 'copilot -p "mode=seed module={module} base-ref={base-ref} acc-ref={acc_ref} repo={target} out={out}" --allow-all --log-level error' }}
     steps:
       - name: Validate payload
         run: |
@@ -97,21 +105,44 @@ jobs:
         id: runner
         working-directory: legacy-app
         run: |
-          set -euo pipefail
+          set -uo pipefail
           if [ -z "${ACC_MODULE_RUNNER_CMD:-}" ]; then
             echo "::warning::ACC_MODULE_RUNNER_CMD not configured yet — skipping runner invocation."
             echo "ran=false" >> "$GITHUB_OUTPUT"
+            echo "status=SKIPPED" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           OUT="$(mktemp -d)"
           TARGET="$PWD"
-          CMD="${ACC_MODULE_RUNNER_CMD//\{module\}/$AFFECTED_MODULE}"
+          # start-of-module-N is the starting state the runner seeds the module from.
+          BASE_REF="$(printf 'start-of-module-%02d' "$AFFECTED_MODULE")"
+          CMD="$ACC_MODULE_RUNNER_CMD"
+          CMD="${CMD//\{module\}/$AFFECTED_MODULE}"
+          CMD="${CMD//\{base-ref\}/$BASE_REF}"
+          CMD="${CMD//\{base_ref\}/$BASE_REF}"
+          CMD="${CMD//\{acc-ref\}/$ACC_SHA}"
+          CMD="${CMD//\{acc_ref\}/$ACC_SHA}"
+          CMD="${CMD//\{repo\}/$ACC_REPO}"
           CMD="${CMD//\{target\}/$TARGET}"
           CMD="${CMD//\{out\}/$OUT}"
           echo "Running (in ../acc): $CMD"
           ( cd "$GITHUB_WORKSPACE/acc" && bash -c "$CMD" )
-          # The runner is expected to write an updated ordered patch series for the
-          # affected module into $OUT. Stage it into the delta store.
+          rc=$?
+          echo "module-runner exit code: $rc"
+          # Surface machine-readable result if the runner emitted one.
+          if [ -f "$OUT/result.json" ]; then
+            echo "result.json:"; cat "$OUT/result.json"
+            rstatus=$(node -e "try{process.stdout.write(String(require('$OUT/result.json').status||''))}catch(e){}" 2>/dev/null || true)
+          else
+            rstatus=""
+          fi
+          # Exit-code contract: 0=PASS 1=FAIL 2=usage 3=BLOCKED.
+          case "$rc" in
+            0) echo "status=${rstatus:-PASS}" >> "$GITHUB_OUTPUT" ;;
+            2) echo "::error::module-runner usage error (exit 2). Check ACC_MODULE_RUNNER_CMD template."; echo "status=USAGE" >> "$GITHUB_OUTPUT"; echo "ran=false" >> "$GITHUB_OUTPUT"; exit 2 ;;
+            3) echo "::warning::module-runner returned BLOCKED (exit 3) — cannot seed module $AFFECTED_MODULE without human input."; echo "status=BLOCKED" >> "$GITHUB_OUTPUT"; echo "ran=false" >> "$GITHUB_OUTPUT"; exit 0 ;;
+            *) echo "::warning::module-runner FAILED (exit $rc)."; echo "status=${rstatus:-FAIL}" >> "$GITHUB_OUTPUT"; echo "ran=false" >> "$GITHUB_OUTPUT"; exit 0 ;;
+          esac
           MOD=$(printf 'module-%02d' "$AFFECTED_MODULE")
           if compgen -G "$OUT/*.patch" > /dev/null; then
             rm -f "course-build/deltas/$MOD/"*.patch || true

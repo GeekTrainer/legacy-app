@@ -90,6 +90,38 @@ Changing module `N` re-derives `delta_N`, which changes `end-of-N` (= `start-of-
 
 App-code cascade conflicts (M05/M06 carry real code) are **flagged for human resolution and never auto-resolved**.
 
+## Module-runner contract (ACC seed/validator skill)
+
+`module-runner` is a **Copilot skill**, invoked by running Copilot CLI in seed mode — not a standalone script. The dispatch receiver expands an invocation template (`ACC_MODULE_RUNNER_CMD`) and runs it from the ACC checkout. Recommended pinned invocation:
+
+```
+copilot -p "mode=seed module={module} base-ref={base-ref} acc-ref={acc_ref} repo={target} out={out}" --allow-all --log-level error
+```
+
+Placeholders expanded by the receiver (both hyphen and underscore forms accepted):
+
+| placeholder | value |
+| ----------- | ----- |
+| `{module}` | affected module number (1..7) |
+| `{base-ref}` / `{base_ref}` | starting state to seed from — **zero-padded** `start-of-module-NN` (e.g. `start-of-module-04`), computed by the receiver |
+| `{acc-ref}` / `{acc_ref}` | pinned 40-char `acc_sha` from the payload (reproducible seeds) |
+| `{repo}` / `{target}` | the legacy-app checkout the runner writes into |
+| `{out}` | output dir for the proposed patch series + `result.json` |
+
+> [!NOTE]
+> ACC's suggested wording `base-ref=start-of-module-{module}` is **not** zero-padded and would produce `start-of-module-4`; our branch names are two-digit. Use `{base-ref}`, which the receiver injects zero-padded, rather than `start-of-module-{module}`.
+
+The runner writes a machine-readable `result.json` into `{out}` and signals via exit code:
+
+| exit | `result.json` status | receiver behavior |
+| ---- | -------------------- | ----------------- |
+| `0` | `PASS` | stage produced `*.patch`, continue to regen + PR |
+| `1` | `FAIL` | warn; no patches staged; PR still opened from stored deltas |
+| `2` | (usage) | hard error — fix `ACC_MODULE_RUNNER_CMD` template |
+| `3` | `BLOCKED` | needs human input; flagged, no auto-proposal |
+
+Provisioning of `ACC_MODULE_RUNNER_CMD`, `ACC_REPO`, tokens, and the promotion environment is documented in [`OPERATIONS.md`](./OPERATIONS.md).
+
 ## Lifecycle summary
 
 ```

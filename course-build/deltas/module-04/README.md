@@ -1,13 +1,11 @@
-# Module 04 delta — pending ACC content
+# Module 04 delta — LANDED
 
 **Produces:** `start-of-module-05` (= cumulative end state of Module 04)
 
-**Adds:** .github/hooks lifecycle hooks
+**Adds** (deterministic; not agent-authored):
+- `.github/hooks/scripts/test-router.sh` — mode `0755`, ACC blob `fc8d073eb5324d77a817550f88f745a83eb696e1`
+- `.github/hooks/hooks.json` — mode `0644`, canonical body from ACC `content/04-lifecycle-hooks.md`
 
-**Status:** `pending-acc-content` — this module's app-state is produced by ACC's module-runner. No patches are stored yet.
+**Verification:** `build-branches.mjs --check` confirms M4 → `start-of-module-05` reproduces `expectedTreeSha` `9bb1cb347bb20bce703a9bd9fc1aefba7113f936`.
 
-## What is needed to author this delta
-
-See `needsFromAcc` for module 04 in `course-build/manifest.json`. Once the module-runner proposes a delta (or the required ACC content is relayed), the ordered `*.patch` series will be committed here and `manifest.json` updated (`status` -> `backfilled`, `patches`, `expectedTreeSha`, `expectedAssets`).
-
-Until then the branch generator (`course-build/scripts/build-branches.mjs`) treats this module as empty and stops the buildable range at the last backfilled module.
+See `manifest.json` (module 4) and the patch in this directory.

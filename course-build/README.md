@@ -11,7 +11,7 @@ Start with **[`REFS.md`](./REFS.md)** — the authoritative ref model + `reposit
 | [`REFS.md`](./REFS.md) | Ref/naming model, module map, dispatch payload contract, lifecycle. |
 | [`manifest.json`](./manifest.json) | Machine-readable delta index: base ref, per-module patch order, expected trees/assets. |
 | [`deprecated-branches.md`](./deprecated-branches.md) | Deprecation mapping for the two legacy `-solution` branches. |
-| `deltas/module-NN/*.patch` | Ordered `git format-patch` series per module (M01–M03 backfilled; M04–M06 pending ACC content). |
+| `deltas/module-NN/*.patch` | Ordered `git format-patch` series per module (M01–M04 backfilled; M05–M06 pending ACC content). |
 | `scripts/build-branches.mjs` | Generator: base + ordered deltas → staging refs, with `--check` verification. |
 | `scripts/validate-branch.sh` | Build one branch and run the suites present in that state. |
 
@@ -36,4 +36,4 @@ course-build/scripts/validate-branch.sh start-of-module-04
 
 ## Status
 
-M01–M03 deltas are backfilled and verified. M04–M06 are `pending-acc-content` (need ACC hooks / barcode feature / modernization code + the module-runner interface). See each `deltas/module-0{4,5,6}/README.md` and `manifest.json` `needsFromAcc`.
+M01–M04 deltas are backfilled and verified. M05–M06 are `pending-acc-content` (need the barcode feature / modernization code + seed runs, which depend on token/environment provisioning). See each `deltas/module-0{5,6}/README.md` and `manifest.json` `needsFromAcc`.
