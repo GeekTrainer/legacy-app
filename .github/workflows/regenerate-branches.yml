@@ -38,6 +38,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 concurrency:
   group: regenerate-branches
@@ -55,7 +56,8 @@ jobs:
       acc_version: ${{ steps.detect.outputs.version }}
       conflict: ${{ steps.conflicts.outputs.conflict }}
       reason: ${{ steps.conflicts.outputs.reason }}
-      runner_status: ${{ steps.runner.outputs.status }}
+      runner_status: ${{ steps.process.outputs.status }}
+      stale: ${{ steps.process.outputs.stale }}
     env:
       ACC_REPO: ${{ vars.ACC_REPO || 'GeekTrainer/advanced-copilot-cli' }}
       # Optional override of the module-runner (Copilot skill) invocation; the
@@ -150,8 +152,8 @@ jobs:
           git config user.email "acc-course-bot@users.noreply.github.com"
           git checkout -b "${{ steps.detect.outputs.branch }}"
 
-      - name: Re-seed affected module deltas via module-runner
-        id: runner
+      - name: Process affected modules by source (asset / seed / stored)
+        id: process
         if: steps.detect.outputs.proceed == 'true'
         working-directory: legacy-app
         env:
@@ -161,55 +163,64 @@ jobs:
           set -uo pipefail
           echo "status=NONE" >> "$GITHUB_OUTPUT"
           if [ -z "${MODULES// }" ]; then
-            echo "No specific modules to re-seed (full rebuild from stored deltas)."
-            echo "ran=false" >> "$GITHUB_OUTPUT"; exit 0
+            echo "No specific modules to process (full rebuild from stored deltas)."
+            echo "stale=" >> "$GITHUB_OUTPUT"; exit 0
           fi
           RUNNER_CMD="${ACC_MODULE_RUNNER_CMD:-}"
           if [ -z "$RUNNER_CMD" ]; then
             RUNNER_CMD='copilot -p "Run module-runner in validator/seed mode with: mode=seed module={module} base-ref={base-ref} acc-ref={acc_ref} repo={target} out={out}" --allow-all --log-level error'
           fi
-          AGG="NONE"; ANY_BLOCKED=false
+          AGG="NONE"; ANY_BLOCKED=false; STALE=""
           for M in $MODULES; do
-            OUT="$(mktemp -d)"
-            TARGET="$PWD"
-            BASE_REF="$(printf 'start-of-module-%02d' "$M")"
-            CMD="$RUNNER_CMD"
-            CMD="${CMD//\{module\}/$M}"
-            CMD="${CMD//\{base-ref\}/$BASE_REF}"
-            CMD="${CMD//\{base_ref\}/$BASE_REF}"
-            CMD="${CMD//\{acc-ref\}/$TARGET_SHA}"
-            CMD="${CMD//\{acc_ref\}/$TARGET_SHA}"
-            CMD="${CMD//\{repo\}/$TARGET}"
-            CMD="${CMD//\{target\}/$TARGET}"
-            CMD="${CMD//\{out\}/$OUT}"
-            echo "== module $M == $CMD"
-            ( cd "$GITHUB_WORKSPACE/acc" && bash -c "$CMD" ) || echo "copilot exit: $?"
-            # result.json is authoritative (skill runs inside a Copilot session).
-            if [ ! -f "$OUT/result.json" ]; then
-              echo "::warning::module $M: no result.json (skipping re-seed; keeping stored delta)"
-              continue
-            fi
-            cat "$OUT/result.json"; echo
-            R="$(node -e "try{process.stdout.write(String(require('$OUT/result.json').result||''))}catch(e){process.stdout.write('__ERR__')}")"
-            case "$R" in
-              PASS)
-                if compgen -G "$OUT/patches/*.patch" > /dev/null; then
-                  MOD=$(printf 'module-%02d' "$M")
-                  rm -f "course-build/deltas/$MOD/"*.patch || true
-                  cp "$OUT"/patches/*.patch "course-build/deltas/$MOD/"
-                  echo "module $M: staged patches from $OUT/patches"
-                  AGG="PASS"
-                else
-                  echo "::warning::module $M: PASS but no patches (validate mode?)"
-                fi ;;
-              FAIL) echo "::warning::module $M: FAIL — keeping stored delta"; [ "$AGG" = "NONE" ] && AGG="FAIL" ;;
-              BLOCKED) echo "::warning::module $M: BLOCKED"; ANY_BLOCKED=true; AGG="BLOCKED" ;;
-              *) echo "::warning::module $M: unparseable result.json"; [ "$AGG" = "NONE" ] && AGG="FAIL" ;;
+            SRC="$(node -e "const m=require('./course-build/manifest.json').modules.find(x=>x.module==$M);process.stdout.write(m?String(m.source||''):'')")"
+            echo "== module $M (source=$SRC) =="
+            case "$SRC" in
+              asset)
+                # Deterministic re-derive from checked-in ACC assets — NO AI.
+                RES="$(node course-build/scripts/rederive-asset-module.mjs --acc "$GITHUB_WORKSPACE/acc" --module "$M" --apply)"
+                echo "rederive: $RES"
+                CH="$(printf '%s' "$RES" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>process.stdout.write(String(JSON.parse(s).changed)))")"
+                [ "$CH" = "true" ] && AGG="PASS" && echo "module $M: asset delta re-derived (changed)"
+                ;;
+              seed)
+                OUT="$(mktemp -d)"; TARGET="$PWD"
+                BASE_REF="$(printf 'start-of-module-%02d' "$M")"
+                CMD="$RUNNER_CMD"
+                CMD="${CMD//\{module\}/$M}"; CMD="${CMD//\{base-ref\}/$BASE_REF}"; CMD="${CMD//\{base_ref\}/$BASE_REF}"
+                CMD="${CMD//\{acc-ref\}/$TARGET_SHA}"; CMD="${CMD//\{acc_ref\}/$TARGET_SHA}"
+                CMD="${CMD//\{repo\}/$TARGET}"; CMD="${CMD//\{target\}/$TARGET}"; CMD="${CMD//\{out\}/$OUT}"
+                echo "$CMD"
+                ( cd "$GITHUB_WORKSPACE/acc" && bash -c "$CMD" ) || echo "copilot exit: $?"
+                if [ ! -f "$OUT/result.json" ]; then
+                  echo "::warning::module $M (seed): no result.json — stale"; STALE="$STALE $M:runner-blocked"; continue
+                fi
+                cat "$OUT/result.json"; echo
+                R="$(node -e "try{process.stdout.write(String(require('$OUT/result.json').result||''))}catch(e){process.stdout.write('__ERR__')}")"
+                case "$R" in
+                  PASS)
+                    if compgen -G "$OUT/patches/*.patch" > /dev/null; then
+                      MOD=$(printf 'module-%02d' "$M")
+                      rm -f "course-build/deltas/$MOD/"*.patch || true
+                      cp "$OUT"/patches/*.patch "course-build/deltas/$MOD/"
+                      echo "module $M: staged seed patches"; AGG="PASS"
+                    else
+                      echo "::warning::module $M (seed): PASS but no patches — stale"; STALE="$STALE $M:runner-blocked"
+                    fi ;;
+                  FAIL) echo "::warning::module $M (seed): FAIL — stale"; STALE="$STALE $M:runner-blocked"; [ "$AGG" = "NONE" ] && AGG="FAIL" ;;
+                  BLOCKED) echo "::warning::module $M (seed): BLOCKED — stale"; STALE="$STALE $M:runner-blocked"; ANY_BLOCKED=true; AGG="BLOCKED" ;;
+                  *) echo "::warning::module $M (seed): unparseable result — stale"; STALE="$STALE $M:runner-blocked"; [ "$AGG" = "NONE" ] && AGG="FAIL" ;;
+                esac
+                ;;
+              stored|*)
+                # No deterministic ACC asset and not agent-seeded: surface for a human.
+                echo "::warning::module $M (stored): no auto-derive — stale (needs human authoring)"
+                STALE="$STALE $M:needs-human-authoring"
+                ;;
             esac
           done
           $ANY_BLOCKED && AGG="BLOCKED"
           echo "status=$AGG" >> "$GITHUB_OUTPUT"
-          echo "ran=true" >> "$GITHUB_OUTPUT"
+          echo "stale=$(echo $STALE | xargs)" >> "$GITHUB_OUTPUT"
 
       - name: Regenerate downstream chain into staging
         id: regen
@@ -230,7 +241,7 @@ jobs:
           if [ "${{ steps.regen.outcome }}" != "success" ]; then
             echo "conflict=true" >> "$GITHUB_OUTPUT"; echo "reason=cascade" >> "$GITHUB_OUTPUT"
             echo "::warning::Regeneration failed to apply cleanly — likely an app-code cascade conflict. Flagging for human resolution."
-          elif [ "${{ steps.runner.outputs.status }}" = "BLOCKED" ]; then
+          elif [ "${{ steps.process.outputs.status }}" = "BLOCKED" ]; then
             echo "conflict=true" >> "$GITHUB_OUTPUT"; echo "reason=blocked" >> "$GITHUB_OUTPUT"
             echo "::warning::module-runner reported BLOCKED — flagging for human input."
           else
@@ -245,7 +256,8 @@ jobs:
           TARGET_SHA: ${{ steps.detect.outputs.target_sha }}
         run: |
           set -euo pipefail
-          git add course-build/deltas
+          # Asset re-derive may also update manifest.json (expectedTreeSha/patches).
+          git add course-build/deltas course-build/manifest.json
           if git diff --cached --quiet; then
             echo "No delta changes produced — no proposal to open (last-acc-sha NOT advanced)."
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -260,6 +272,64 @@ jobs:
             -m "dispatch_id: ${{ steps.detect.outputs.dispatch_id }}"
           git push origin "HEAD:${{ steps.detect.outputs.branch }}"
           echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Reconcile stale tracking issues (stored / seed with no auto-delta)
+        if: steps.detect.outputs.proceed == 'true'
+        working-directory: legacy-app
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STALE: ${{ steps.process.outputs.stale }}
+          TARGET_SHA: ${{ steps.detect.outputs.target_sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          # Ensure labels exist.
+          for l in acc-stale needs-human-authoring runner-blocked; do
+            gh label create "$l" -c "#FBCA04" -f >/dev/null 2>&1 || true
+          done
+
+          # Build the set of currently-stale module numbers + their reason label.
+          declare -A WANT
+          for pair in $STALE; do
+            M="${pair%%:*}"; L="${pair##*:}"; WANT[$M]="$L"
+          done
+
+          marker() { echo "<!-- acc-stale-module:$1 -->"; }
+
+          # Find the single open tracking issue for a module (by hidden marker).
+          find_issue() {
+            gh issue list --state open --label acc-stale --limit 100 \
+              --json number,body --jq \
+              "map(select(.body | contains(\"$(marker "$1")\"))) | .[0].number // empty"
+          }
+
+          # Open/update one issue per currently-stale module (no duplicates).
+          for M in "${!WANT[@]}"; do
+            L="${WANT[$M]}"
+            TITLE="ACC content changed for module $(printf '%02d' "$M") — delta review needed"
+            BODY="$(printf '%s\n\n%s\n\n- module: %s\n- classification: %s\n- ACC SHA: `%s`\n- run: %s\n\nThis change could not be auto-applied to the delta store. Author/update the module delta, then merge a regen PR to advance `course-build/.last-acc-sha`; this issue auto-closes once the change is no longer detected.' \
+              "$(marker "$M")" "The regenerate workflow detected an ACC change affecting module $M but produced no automatic delta update." "$M" "$L" "$TARGET_SHA" "$RUN_URL")"
+            NUM="$(find_issue "$M" || true)"
+            if [ -n "$NUM" ]; then
+              gh issue edit "$NUM" --body "$BODY" --add-label "acc-stale,$L" >/dev/null
+              echo "updated stale issue #$NUM (module $M)"
+            else
+              gh issue create --title "$TITLE" --body "$BODY" --label "acc-stale,$L" >/dev/null
+              echo "opened stale issue for module $M"
+            fi
+          done
+
+          # Reconcile-close: any open acc-stale issue whose module is NOT stale now
+          # (the change was handled and the SHA advanced past it) is superseded.
+          gh issue list --state open --label acc-stale --limit 100 --json number,body \
+            --jq '.[] | [.number, (.body | capture("acc-stale-module:(?<m>[0-9]+)").m)] | @tsv' \
+          | while IFS=$'\t' read -r NUM MOD; do
+              if [ -z "${MOD:-}" ]; then continue; fi
+              if [ -z "${WANT[$((10#$MOD))]:-}" ]; then
+                gh issue close "$NUM" --comment "Superseded: module $MOD is no longer detected as a stale ACC change (delta updated / SHA advanced). Closed by ${RUN_URL}." >/dev/null || true
+                echo "closed superseded stale issue #$NUM (module $MOD)"
+              fi
+            done
 
   # In-run validation: GITHUB_TOKEN-authored PRs do NOT cascade-trigger the
   # pull_request event, so we validate the pushed regen branch here via

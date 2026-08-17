@@ -18,6 +18,7 @@
 //   firstRun   true when --from was absent/empty (caller should treat as full regen)
 
 import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 function parseArgs(argv) {
   const a = { acc: null, from: null, to: null };
@@ -48,6 +49,8 @@ function moduleForPath(p) {
   return null;
 }
 
+export { moduleForPath };
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const firstRun = !args.from || args.from.trim() === '';
@@ -74,4 +77,6 @@ function main() {
   }));
 }
 
-try { main(); } catch (e) { console.error('ERROR: ' + e.message); process.exit(1); }
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  try { main(); } catch (e) { console.error('ERROR: ' + e.message); process.exit(1); }
+}

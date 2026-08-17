@@ -14,11 +14,13 @@
       "startBranch": "start-of-module-02",
       "title": "Docs update (ARCHITECTURE.md, README, devcontainer postCreate)",
       "status": "backfilled",
-      "source": {
+      "source": "stored",
+      "provenance": {
         "kind": "solution-branch-range",
         "fromSha": "3689288d1f5a9ed6871db94a09c2e651bc20af3e",
         "toSha": "4785d0413052e0f67fc90569238b36ae72ee5713",
-        "sourceBranch": "02-building-ai-infra-solution"
+        "sourceBranch": "02-building-ai-infra-solution",
+        "note": "Backfilled once from the -solution branch; no deterministic ACC asset glob to re-derive from. ACC content changes surface as a stale tracking issue for human authoring."
       },
       "deltaDir": "deltas/module-01",
       "patches": [
@@ -34,11 +36,13 @@
       "startBranch": "start-of-module-03",
       "title": "Instructions + Accessibility Expert agent + make-repo-contribution skill + copilot-instructions + a11y tweaks",
       "status": "backfilled",
-      "source": {
+      "source": "stored",
+      "provenance": {
         "kind": "solution-branch-range",
         "fromSha": "4785d0413052e0f67fc90569238b36ae72ee5713",
         "toSha": "41329a08ecced4e449c4984fa8cafb48c086e095",
-        "sourceBranch": "02-building-ai-infra-solution"
+        "sourceBranch": "02-building-ai-infra-solution",
+        "note": "Backfilled once from the -solution branch; no deterministic ACC asset glob to re-derive from. ACC content changes surface as a stale tracking issue for human authoring."
       },
       "deltaDir": "deltas/module-02",
       "patches": [
@@ -68,11 +72,13 @@
       "startBranch": "start-of-module-04",
       "title": "Playwright test foundation + delegation brief + test backfill",
       "status": "backfilled",
-      "source": {
+      "source": "stored",
+      "provenance": {
         "kind": "solution-branch-range",
         "fromSha": "41329a08ecced4e449c4984fa8cafb48c086e095",
         "toSha": "4f763738775270bc8e66a66b0465726002363226",
-        "sourceBranch": "03-test-suite-remote-delegation-solution"
+        "sourceBranch": "03-test-suite-remote-delegation-solution",
+        "note": "Backfilled once from the -solution branch; no deterministic ACC asset glob to re-derive from. ACC content changes surface as a stale tracking issue for human authoring."
       },
       "deltaDir": "deltas/module-03",
       "patches": [
@@ -100,10 +106,12 @@
       "startBranch": "start-of-module-05",
       "title": ".github/hooks lifecycle hooks (postToolUse + agentStop test-router)",
       "status": "backfilled",
-      "source": {
+      "source": "asset",
+      "assetRoot": "assets/04",
+      "provenance": {
         "kind": "acc-assets",
-        "sourceBranch": null,
-        "note": "Deterministic: adds .github/hooks/scripts/test-router.sh (ACC blob fc8d073eb5324d77a817550f88f745a83eb696e1, mode 0755) and .github/hooks/hooks.json (mode 0644, canonical body from ACC content/04-lifecycle-hooks.md). Not agent-authored."
+        "assetRoot": "assets/04",
+        "note": "Deterministic: the produced state is exactly the checked-in ACC assets under assets/04/** (path stripped of the assetRoot prefix), copied with their ACC blob modes. Re-derived with NO AI by rederive-asset-module.mjs. Currently adds .github/hooks/scripts/test-router.sh (0755) and .github/hooks/hooks.json (0644)."
       },
       "deltaDir": "deltas/module-04",
       "patches": [
@@ -121,7 +129,8 @@
       "startBranch": "start-of-module-06",
       "title": "Playwright MCP registration + QA custom agent + REAL barcode feature (assets-svc + web)",
       "status": "pending-acc-content",
-      "source": { "kind": "module-runner", "sourceBranch": null },
+      "source": "seed",
+      "provenance": { "kind": "module-runner", "note": "Copilot-generated app code; delta proposed via the module-runner seed path. When the runner emits no patch or returns BLOCKED, the change surfaces as a stale tracking issue." },
       "deltaDir": "deltas/module-05",
       "patches": [],
       "expectedTreeSha": null,
@@ -134,7 +143,8 @@
       "startBranch": "start-of-module-07",
       "title": "LSP+MCP config + research report + REAL modernization app code",
       "status": "pending-acc-content",
-      "source": { "kind": "module-runner", "sourceBranch": null },
+      "source": "seed",
+      "provenance": { "kind": "module-runner", "note": "Copilot-generated app code; delta proposed via the module-runner seed path. When the runner emits no patch or returns BLOCKED, the change surfaces as a stale tracking issue." },
       "deltaDir": "deltas/module-06",
       "patches": [],
       "expectedTreeSha": null,

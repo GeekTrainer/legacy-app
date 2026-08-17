@@ -63,6 +63,24 @@ Deltas are deterministic, stored, and canonical. Each module is an **ordered pat
 
 A rebuild is: `checkout acc-base` → for each module in order, `git am` its patch series → the resulting tree is that module's end state / the next module's start branch.
 
+## Module `source` classification
+
+Each module in `manifest.json` carries a `source` field that determines **how a detected ACC change is turned into a delta update** during regeneration:
+
+| `source` | meaning | on an ACC change to that module |
+| -------- | ------- | ------------------------------- |
+| `asset` | the produced state **is** the checked-in ACC assets under `assetRoot` (e.g. M04 = `assets/04/**`, path-stripped of the prefix, copied with ACC file modes) | **deterministically re-derived** by `rederive-asset-module.mjs` — NO module-runner / AI. If the re-derived produced tree differs from `expectedTreeSha`, a normal human-gated regen PR is opened (and `manifest.expectedTreeSha` updated). |
+| `seed` | output is Copilot-generated app code (M05/M06) | proposed via the **module-runner** seed path (AI). PASS with patches → staged; `FAIL`/`BLOCKED`/no-patch → **stale** (see below). |
+| `stored` | delta was backfilled once from the legacy-app `-solution` branches (M01–M03); no deterministic ACC asset to derive from | **stale** — there is nothing to auto-derive; a human must re-author. (Conservative: if only part of a module is asset-derivable, it is classified `stored`.) |
+
+Current classification: **M01–M03 = `stored`**, **M04 = `asset`** (`assets/04`), **M05–M06 = `seed`**.
+
+### Stale surfacing (no silent no-op, no lost signal)
+
+When a detected ACC change produces **no automatic delta update** (`stored`, or `seed` where the runner emitted no patch / returned `BLOCKED`), the workflow does **not** advance `.last-acc-sha` and does **not** no-op silently. Instead it maintains **one** auto-managed tracking issue **per module** (found/updated by a hidden `<!-- acc-stale-module:NN -->` marker, never duplicated), titled `ACC content changed for module NN — delta review needed`, labelled `acc-stale` + (`needs-human-authoring` for `stored` | `runner-blocked` for `seed`). On each cron tick the issue is updated in place; once the module is no longer detected as stale (the delta was authored and the SHA advanced past it) the issue is auto-closed as superseded.
+
+
+
 ## Trigger model — legacy-app PULLS from ACC (no cross-repo auth)
 
 > [!NOTE]
@@ -176,6 +194,8 @@ learners `git checkout start-of-module-N`
 | `deprecated-branches.md` | Deprecation notice text for the two legacy `-solution` branches. |
 | `scripts/build-branches.mjs` | Generator: assembles base + ordered deltas into staging refs. |
 | `scripts/detect-affected-modules.mjs` | Maps changed ACC paths to affected module numbers. |
+| `scripts/rederive-asset-module.mjs` | Deterministically re-derives an `asset`-class module's delta from ACC assets (no AI). |
+| `scripts/selftest.mjs` | Unit checks for classification + path detection (run in CI). |
 | `../.github/workflows/validate-branches.yml` | CI validation gate (reusable via `workflow_call`). |
 | `../.github/workflows/promote-branches.yml` | Atomic promotion of aliases + tags. |
 | `../.github/workflows/regenerate-branches.yml` | Pull-model regeneration (schedule + manual). |

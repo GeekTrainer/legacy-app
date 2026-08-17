@@ -65,6 +65,14 @@ The runner runs inside a Copilot session, so **`{out}/result.json` is authoritat
 
 The full `result.json` schema is documented in `REFS.md`.
 
+## 5. Module `source` model & stale tracking issues
+
+Each module is classified in `manifest.json` as `asset`, `seed`, or `stored` (see `REFS.md`). On a detected ACC change:
+
+- `asset` → delta is **re-derived deterministically** from the ACC assets (no AI); a change opens a normal regen PR.
+- `seed` → proposed via the module-runner (AI).
+- `stored` (or a `seed` run that produced nothing / `BLOCKED`) → surfaced as **one auto-managed tracking issue per module** (marker `<!-- acc-stale-module:NN -->`, labels `acc-stale` + `needs-human-authoring`/`runner-blocked`), never duplicated, auto-closed once handled. This needs `issues: write` (already granted to the workflow via the built-in token — no secret).
+
 ## Provisioning checklist (zero secrets)
 
 - [ ] Create `production-branches` environment

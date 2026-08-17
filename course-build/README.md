@@ -14,6 +14,8 @@ Start with **[`REFS.md`](./REFS.md)** — the authoritative ref model + trigger 
 | `deltas/module-NN/*.patch` | Ordered `git format-patch` series per module (M01–M04 backfilled; M05–M06 pending ACC content). |
 | `scripts/build-branches.mjs` | Generator: base + ordered deltas → staging refs, with `--check` verification. |
 | `scripts/detect-affected-modules.mjs` | Map changed ACC paths → affected module numbers (pull-model trigger). |
+| `scripts/rederive-asset-module.mjs` | Deterministically re-derive an `asset`-class module's delta from ACC assets (no AI). |
+| `scripts/selftest.mjs` | Unit checks for classification + path detection (run in CI). |
 | `scripts/validate-branch.sh` | Build one branch and run the suites present in that state. |
 | `.last-acc-sha` | Last ACC SHA reflected by the promoted branches (advances on regen PR merge). |
 

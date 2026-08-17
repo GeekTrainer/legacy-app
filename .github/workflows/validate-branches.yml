@@ -59,6 +59,8 @@ jobs:
         run: git fetch --no-tags origin "$(node -e "console.log(require('./course-build/manifest.json').base.sha)")" || true
       - name: Deterministic delta check (trees, assets, ancestry)
         run: node course-build/scripts/build-branches.mjs --check
+      - name: Self-test (classification + path detection)
+        run: node course-build/scripts/selftest.mjs
       - name: Compute buildable start-branch matrix
         id: matrix
         run: |
