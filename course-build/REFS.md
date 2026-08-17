@@ -3,7 +3,7 @@
 This directory (`course-build/`) owns the machinery that produces **checkout-ready learner branches** for the [Advanced Copilot CLI (ACC)](https://github.com/GeekTrainer/advanced-copilot-cli) course. It lives in `legacy-app` and is **never** part of a learner's checked-out state.
 
 > [!IMPORTANT]
-> This document is the authoritative contract. The ACC repo builds its trigger workflow against the naming scheme and `repository_dispatch` payload defined here. Changes here are breaking changes for ACC — coordinate before editing.
+> This document is the authoritative contract for the branch/ref naming scheme and the delta store. Regeneration runs entirely inside `legacy-app` (pull model, no cross-repo auth). Changes to the naming scheme are breaking changes for ACC — coordinate before editing.
 
 ## Why this exists
 
@@ -63,36 +63,43 @@ Deltas are deterministic, stored, and canonical. Each module is an **ordered pat
 
 A rebuild is: `checkout acc-base` → for each module in order, `git am` its patch series → the resulting tree is that module's end state / the next module's start branch.
 
-## `repository_dispatch` contract (ACC → legacy-app)
+## Trigger model — legacy-app PULLS from ACC (no cross-repo auth)
 
-ACC signals a content change by dispatching to this repo. ACC holds no broad push token; it only fires the event.
+> [!NOTE]
+> The earlier push model (ACC firing a `repository_dispatch` of type `acc-content-changed` into legacy-app) is **superseded and no longer used**. The `event_type`/`client_payload` contract below is retained only as historical reference. The ACC side no longer sends a dispatch.
+
+Regeneration runs entirely inside legacy-app on the built-in `GITHUB_TOKEN` with **no secrets**. `regenerate-branches.yml`:
+
+- Triggers on **`workflow_dispatch`** (manual button; optional inputs `acc_sha`, `affected_module`, `acc_version`) and a **daily `schedule`** backstop at **07:17 UTC**.
+- Clones the **public** ACC repo anonymously via `github.token`, pinned to a target SHA (`acc_sha` input, else ACC `main` HEAD at run time).
+- Reads the last successfully processed SHA from **`course-build/.last-acc-sha`**, diffs ACC between it and the target SHA, and maps changed paths to affected modules:
+  - `content/NN-*.md` → module `NN`
+  - `assets/NN/**` → module `NN`
+- Sets the cascade root to the smallest affected module `N` and regenerates `start-of-module-(N+1) .. start-of-module-07`. If `affected_module` is forced, it is used directly. If nothing module-affecting changed, the run exits cleanly with no PR.
+- Opens a regen PR with `GITHUB_TOKEN`. **In-run validation:** because `GITHUB_TOKEN`-authored PRs do **not** cascade-trigger the `pull_request` event, the pushed regen branch is validated in the same run via `validate-branches.yml` (`workflow_call` with a `ref` input) rather than relying on the PR trigger. If PR creation is disabled at the org level, the branch is still pushed and the run surfaces the compare URL for manual PR creation.
+
+### last-acc-sha advancement
+
+`course-build/.last-acc-sha` advances **only when a regen PR is merged** — the SHA bump is committed in the same proposal, so an un-merged proposal or a no-op run never advances it. Merging is the human-approval point; gated promotion follows.
+
+### Historical (superseded) dispatch payload
 
 ```
-POST /repos/GeekTrainer/legacy-app/dispatches
-Accept: application/vnd.github+json
-
-{
-  "event_type": "acc-content-changed",
-  "client_payload": {
-    "acc_sha":         "<full 40-char ACC commit SHA>",   // REQUIRED: receiver checks out ACC at this SHA
-    "acc_ref":         "refs/heads/main",                  // REQUIRED: ACC ref the change landed on
-    "affected_module": 4,                                  // REQUIRED int 1..7: module whose content changed
-    "acc_version":     "2026-08",                          // OPTIONAL: YYYY-MM for immutable tags; default = run-time YYYY-MM
-    "reason":          "content-update",                   // content-update | manual | scheduled
-    "dispatch_id":     "<uuid>"                            // OPTIONAL: correlates staging refs/run; receiver generates if absent
-  }
-}
+POST /repos/GeekTrainer/legacy-app/dispatches   # NO LONGER USED
+{ "event_type": "acc-content-changed",
+  "client_payload": { "acc_sha": "...", "acc_ref": "...", "affected_module": 4,
+                      "acc_version": "2026-08", "reason": "content-update", "dispatch_id": "..." } }
 ```
 
 ### Cascade semantics
 
-Changing module `N` re-derives `delta_N`, which changes `end-of-N` (= `start-of-module-(N+1)`) and **every** downstream branch. The receiver regenerates the range `start-of-module-(N+1) .. start-of-module-07`.
+Changing module `N` re-derives `delta_N`, which changes `end-of-N` (= `start-of-module-(N+1)`) and **every** downstream branch. Regeneration covers `start-of-module-(N+1) .. start-of-module-07`.
 
 App-code cascade conflicts (M05/M06 carry real code) are **flagged for human resolution and never auto-resolved**.
 
 ## Module-runner contract (ACC seed/validator skill)
 
-`module-runner` is a **Copilot skill**, invoked by running Copilot CLI in seed mode — not a standalone script. The dispatch receiver expands an invocation template (`ACC_MODULE_RUNNER_CMD`) and runs it from the ACC checkout. Recommended pinned invocation:
+`module-runner` is a **Copilot skill**, invoked by running Copilot CLI in seed mode — not a standalone script. The regenerate workflow expands an invocation template (`ACC_MODULE_RUNNER_CMD`) and runs it from the ACC checkout. Recommended pinned invocation:
 
 ```
 copilot -p "Run module-runner in validator/seed mode with: mode=seed module={module} base-ref={base-ref} acc-ref={acc_ref} repo={target} out={out}" --allow-all --log-level error
@@ -137,20 +144,22 @@ Provisioning of `ACC_MODULE_RUNNER_CMD`, `ACC_REPO`, tokens, and the promotion e
 ## Lifecycle summary
 
 ```
-ACC content change
-      │  repository_dispatch: acc-content-changed
+ACC content change (public repo)
+      │  pulled on schedule (daily 07:17 UTC) or manual workflow_dispatch
       ▼
-acc-content-changed.yml (receiver)
-      │  checkout ACC@acc_sha → invoke module-runner for affected module
-      │  regenerate range (N+1..07) into regen/<dispatch_id>/start-of-module-K
-      │  commit updated delta patches → open PR (flag app-code conflicts)
+regenerate-branches.yml
+      │  clone public ACC@target_sha (anon github.token)
+      │  diff vs course-build/.last-acc-sha → affected modules
+      │  (re-seed via module-runner) → regenerate (N+1..07) into staging
+      │  commit deltas + .last-acc-sha → push branch
       ▼
-validate-branches.yml (gate)  ── runs on the regen PR
-      │  build + all suites + assets/ancestry/secret checks + runner pass
+validate-branches.yml (gate)  ── called IN-RUN via workflow_call (ref = regen branch)
+      │  build + all suites + assets/ancestry/secret checks
       ▼
-human review + approve + merge PR
+open PR (GITHUB_TOKEN; fallback: compare URL) → human review + approve + merge
+      │  merge advances course-build/.last-acc-sha
       ▼
-promote-branches.yml (promotion)
+promote-branches.yml (promotion, production-branches env gate)
       │  atomic: move start-of-module-N aliases + cut acc-<version>/start-of-module-N tags
       ▼
 learners `git checkout start-of-module-N`
@@ -162,9 +171,11 @@ learners `git checkout start-of-module-N`
 | ---- | ------- |
 | `REFS.md` | This document — ref model + contract. |
 | `manifest.json` | Machine-readable delta store index (base, per-module patch order, expected trees/assets). |
+| `.last-acc-sha` | Last ACC SHA whose state is reflected by the promoted branches (advances on regen PR merge). |
 | `deltas/module-NN/*.patch` | Ordered `git format-patch` series per module. |
 | `deprecated-branches.md` | Deprecation notice text for the two legacy `-solution` branches. |
 | `scripts/build-branches.mjs` | Generator: assembles base + ordered deltas into staging refs. |
-| `../.github/workflows/validate-branches.yml` | CI validation gate. |
+| `scripts/detect-affected-modules.mjs` | Maps changed ACC paths to affected module numbers. |
+| `../.github/workflows/validate-branches.yml` | CI validation gate (reusable via `workflow_call`). |
 | `../.github/workflows/promote-branches.yml` | Atomic promotion of aliases + tags. |
-| `../.github/workflows/acc-content-changed.yml` | `repository_dispatch` receiver. |
+| `../.github/workflows/regenerate-branches.yml` | Pull-model regeneration (schedule + manual). |

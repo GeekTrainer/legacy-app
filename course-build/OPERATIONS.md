@@ -1,8 +1,20 @@
 # Operations runbook — provisioning the ACC branch system
 
-This system needs repo-level configuration that **cannot** be created by a committed file: GitHub Actions **environments**, **variables**, and **secrets** live in repository settings and must be provisioned by a human with admin rights. (`.github/github-app.yml` configures the Copilot *app*, not Actions environments — so it is not the right vehicle here.)
+This system runs entirely on the built-in `GITHUB_TOKEN` and needs **no secrets**. The only human provisioning is one Actions environment (for the promotion approval gate) and two optional repository variables. Items marked **TODO(owner)** require decisions/identities this automation must not invent.
 
-Everything below is the exact provisioning surface. Items marked **TODO(owner)** require decisions/identities this automation must not invent.
+## How regeneration is triggered (pull model)
+
+`regenerate-branches.yml` is self-contained — legacy-app **pulls** from the public ACC repo; nothing is pushed into legacy-app from outside.
+
+- **Manual button:** Actions → *Regenerate learner branches* → *Run workflow*. Optional inputs: `acc_sha` (blank = ACC `main` HEAD), `affected_module` (blank = auto-detect), `acc_version` (blank = current `YYYY-MM`).
+- **Daily cron backstop:** `07:17 UTC` — catches ACC changes with no manual run.
+
+It clones public ACC anonymously with `github.token` (no secret), diffs the target SHA against `course-build/.last-acc-sha` to find affected modules, regenerates the downstream chain, validates in-run, and opens a regen PR.
+
+> [!IMPORTANT]
+> Two GitHub-settings caveats:
+> 1. **PR creation toggle** — opening a PR from Actions requires *Settings → Actions → General → Allow GitHub Actions to create and approve pull requests*. If it is disabled, the workflow still pushes the regen branch and prints a compare URL in the run summary for manual PR creation.
+> 2. **No cascade from `GITHUB_TOKEN` PRs** — PRs opened by the built-in token do **not** trigger other workflows, so validation is invoked **in-run** via `workflow_call` (not the `pull_request` event) against the pushed regen branch.
 
 ## 1. `production-branches` environment (gates promotion)
 
@@ -20,55 +32,44 @@ gh api -X PUT repos/GeekTrainer/legacy-app/environments/production-branches
 > [!IMPORTANT]
 > Until at least one required reviewer is added, the environment does not actually gate anything. Adding reviewers is a **TODO(owner)** step.
 
-## 2. Repository variables
+## 2. Repository variables (both optional)
 
 ```bash
+# Optional: override the ACC repo (defaults to GeekTrainer/advanced-copilot-cli).
 gh variable set ACC_REPO --repo GeekTrainer/legacy-app --body 'GeekTrainer/advanced-copilot-cli'
 
-# Module-runner invocation template. module-runner is a Copilot skill invoked via
-# Copilot CLI in seed mode, not a standalone script. Placeholders expanded by the
-# receiver: {module} {base-ref} {acc_ref} {repo} {target} {out} (base-ref is
-# injected zero-padded, e.g. start-of-module-04; acc_ref is the pinned acc_sha).
-# The receiver defaults to the invocation below when this var is unset; override
-# it only to pin a specific --model.
+# Optional: override the module-runner (Copilot skill) invocation. Placeholders
+# expanded by the workflow: {module} {base-ref} {acc_ref} {repo} {target} {out}
+# (base-ref injected zero-padded, e.g. start-of-module-04; acc_ref = target SHA).
+# When unset, the workflow uses the pinned default below. Override only to pin --model.
 # gh variable set ACC_MODULE_RUNNER_CMD --repo GeekTrainer/legacy-app \
 #   --body 'copilot -p "Run module-runner in validator/seed mode with: mode=seed module={module} base-ref={base-ref} acc-ref={acc_ref} repo={target} out={out}" --allow-all --log-level error'
 ```
 
-If `ACC_REPO` is unset the receiver defaults to `GeekTrainer/advanced-copilot-cli`. If `ACC_MODULE_RUNNER_CMD` is unset the receiver skips the runner step (no auto-proposal) but still regenerates from stored deltas.
+If `ACC_MODULE_RUNNER_CMD` is unset the workflow still runs the pinned default when there are modules to re-seed; for a full rebuild from stored deltas no runner is invoked.
 
 ## 3. Secrets
 
-```bash
-# Optional: read-only token to clone ACC at acc_sha (rate-limit robustness).
-# ACC is public, so the receiver falls back to anonymous / github.token when absent.
-# TODO(owner): provision a fine-grained PAT or GitHub App token (contents:read on ACC).
-# gh secret set ACC_READ_TOKEN --repo GeekTrainer/legacy-app --body '<token>'
+**None.** ACC is public (anonymous clone via `github.token`), and there is no inbound dispatch, so neither an ACC read token nor a cross-repo dispatch token is required.
 
-# Token ACC uses to POST /repos/GeekTrainer/legacy-app/dispatches (fires the receiver).
-# Lives on the ACC side, not here, but is part of the contract.
-# TODO(owner): provision LEGACY_APP_DISPATCH_TOKEN (fine-grained PAT or App with
-#   contents:write on legacy-app) and store it as a secret in the ACC repo.
-```
+## 4. Module-runner contract
 
-## 4. Module-runner contract (ACC PR #18)
+The runner runs inside a Copilot session, so **`{out}/result.json` is authoritative, not the `copilot` process exit code**. The workflow reads `result.json.result` and maps:
 
-The runner runs inside a Copilot session, so **`{out}/result.json` is authoritative, not the `copilot` process exit code**. The receiver reads `result.json.result` and maps:
-
-| `result` | receiver behavior | mapped exit |
-| -------- | ----------------- | ----------- |
+| `result` | behavior | mapped exit |
+| -------- | -------- | ----------- |
 | `PASS` | stage `{out}/patches/*.patch`, continue | 0 |
 | `FAIL` | warn, no patches staged, PR still opened from stored deltas | 1 |
 | `BLOCKED` | flag for human input (`runner-blocked`), no auto-proposal | 2 |
-| missing / unparseable | hard error — fail the run | 3 |
+| missing / unparseable | skip re-seed for that module (keep stored delta) | 3 |
 
-The full `result.json` schema is documented in `REFS.md`. The receiver defaults `ACC_MODULE_RUNNER_CMD` to the invocation below; override only to pin a specific `--model`.
+The full `result.json` schema is documented in `REFS.md`.
 
-## Provisioning checklist
+## Provisioning checklist (zero secrets)
 
 - [ ] Create `production-branches` environment
 - [ ] **TODO(owner):** add required reviewer(s) to `production-branches`
-- [ ] Set `ACC_REPO` variable (or rely on default)
-- [ ] **TODO(owner/ACC):** set `ACC_MODULE_RUNNER_CMD` from the relayed invocation
-- [ ] **TODO(owner):** provision `ACC_READ_TOKEN` (optional)
-- [ ] **TODO(owner):** provision `LEGACY_APP_DISPATCH_TOKEN` in the ACC repo
+- [ ] **TODO(owner):** enable *Allow GitHub Actions to create and approve pull requests* (or accept the compare-URL fallback)
+- [ ] (optional) set `ACC_REPO` variable (else default is used)
+- [ ] (optional) set `ACC_MODULE_RUNNER_CMD` variable (else pinned default is used)
+- [ ] No secrets to provision ✅
