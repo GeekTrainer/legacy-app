@@ -44,8 +44,9 @@ jobs:
       # module-runner is a Copilot skill invoked via Copilot CLI in seed mode.
       # base-ref is computed here (zero-padded start-of-module-NN) and injected as
       # {base-ref}; acc-ref is the pinned 40-char acc_sha ({acc_ref}). Ops may
-      # override via the ACC_MODULE_RUNNER_CMD repo variable (e.g. to pin --model).
-      ACC_MODULE_RUNNER_CMD: ${{ vars.ACC_MODULE_RUNNER_CMD || 'copilot -p "mode=seed module={module} base-ref={base-ref} acc-ref={acc_ref} repo={target} out={out}" --allow-all --log-level error' }}
+      # override via the ACC_MODULE_RUNNER_CMD repo variable (e.g. to pin --model);
+      # when unset the step uses a pinned default seed invocation.
+      ACC_MODULE_RUNNER_CMD: ${{ vars.ACC_MODULE_RUNNER_CMD }}
     steps:
       - name: Validate payload
         run: |
@@ -106,17 +107,16 @@ jobs:
         working-directory: legacy-app
         run: |
           set -uo pipefail
-          if [ -z "${ACC_MODULE_RUNNER_CMD:-}" ]; then
-            echo "::warning::ACC_MODULE_RUNNER_CMD not configured yet — skipping runner invocation."
-            echo "ran=false" >> "$GITHUB_OUTPUT"
-            echo "status=SKIPPED" >> "$GITHUB_OUTPUT"
-            exit 0
+          RUNNER_CMD="${ACC_MODULE_RUNNER_CMD:-}"
+          if [ -z "$RUNNER_CMD" ]; then
+            # Pinned default seed invocation (module-runner is a Copilot skill).
+            RUNNER_CMD='copilot -p "Run module-runner in validator/seed mode with: mode=seed module={module} base-ref={base-ref} acc-ref={acc_ref} repo={target} out={out}" --allow-all --log-level error'
           fi
           OUT="$(mktemp -d)"
           TARGET="$PWD"
-          # start-of-module-N is the starting state the runner seeds the module from.
+          # start-of-module-NN (zero-padded) is the starting state seeded from.
           BASE_REF="$(printf 'start-of-module-%02d' "$AFFECTED_MODULE")"
-          CMD="$ACC_MODULE_RUNNER_CMD"
+          CMD="$RUNNER_CMD"
           CMD="${CMD//\{module\}/$AFFECTED_MODULE}"
           CMD="${CMD//\{base-ref\}/$BASE_REF}"
           CMD="${CMD//\{base_ref\}/$BASE_REF}"
@@ -126,30 +126,49 @@ jobs:
           CMD="${CMD//\{target\}/$TARGET}"
           CMD="${CMD//\{out\}/$OUT}"
           echo "Running (in ../acc): $CMD"
-          ( cd "$GITHUB_WORKSPACE/acc" && bash -c "$CMD" )
-          rc=$?
-          echo "module-runner exit code: $rc"
-          # Surface machine-readable result if the runner emitted one.
-          if [ -f "$OUT/result.json" ]; then
-            echo "result.json:"; cat "$OUT/result.json"
-            rstatus=$(node -e "try{process.stdout.write(String(require('$OUT/result.json').status||''))}catch(e){}" 2>/dev/null || true)
-          else
-            rstatus=""
+          # The skill runs inside a Copilot session; its process exit is NOT
+          # authoritative — result.json is. Don't fail the step on copilot's rc.
+          ( cd "$GITHUB_WORKSPACE/acc" && bash -c "$CMD" ) || echo "copilot process exit: $?"
+
+          # Authoritative outcome: parse result.json ($OUT/result.json).
+          if [ ! -f "$OUT/result.json" ]; then
+            echo "::error::module-runner emitted no result.json — treating as unparseable (mapped exit 3)."
+            echo "status=MISSING" >> "$GITHUB_OUTPUT"
+            echo "ran=false" >> "$GITHUB_OUTPUT"
+            exit 3
           fi
-          # Exit-code contract: 0=PASS 1=FAIL 2=usage 3=BLOCKED.
-          case "$rc" in
-            0) echo "status=${rstatus:-PASS}" >> "$GITHUB_OUTPUT" ;;
-            2) echo "::error::module-runner usage error (exit 2). Check ACC_MODULE_RUNNER_CMD template."; echo "status=USAGE" >> "$GITHUB_OUTPUT"; echo "ran=false" >> "$GITHUB_OUTPUT"; exit 2 ;;
-            3) echo "::warning::module-runner returned BLOCKED (exit 3) — cannot seed module $AFFECTED_MODULE without human input."; echo "status=BLOCKED" >> "$GITHUB_OUTPUT"; echo "ran=false" >> "$GITHUB_OUTPUT"; exit 0 ;;
-            *) echo "::warning::module-runner FAILED (exit $rc)."; echo "status=${rstatus:-FAIL}" >> "$GITHUB_OUTPUT"; echo "ran=false" >> "$GITHUB_OUTPUT"; exit 0 ;;
+          echo "result.json:"; cat "$OUT/result.json"; echo
+          RESULT="$(node -e "try{const r=require('$OUT/result.json');process.stdout.write(String(r.result||''))}catch(e){process.stdout.write('__PARSE_ERROR__')}")"
+          if [ "$RESULT" = "__PARSE_ERROR__" ] || [ -z "$RESULT" ]; then
+            echo "::error::result.json present but unparseable / missing .result (mapped exit 3)."
+            echo "status=MISSING" >> "$GITHUB_OUTPUT"
+            echo "ran=false" >> "$GITHUB_OUTPUT"
+            exit 3
+          fi
+          echo "module-runner result: $RESULT"
+
+          # result.result → behavior (PASS=0, FAIL=1, BLOCKED=2, missing/unparseable=3).
+          case "$RESULT" in
+            PASS) echo "status=PASS" >> "$GITHUB_OUTPUT" ;;
+            FAIL)
+              echo "::warning::module-runner reported FAIL — a verification step failed. No patches staged; PR still opened from stored deltas."
+              echo "status=FAIL" >> "$GITHUB_OUTPUT"; echo "ran=false" >> "$GITHUB_OUTPUT"; exit 0 ;;
+            BLOCKED)
+              echo "::warning::module-runner reported BLOCKED — prereq/credential/external-service prevented a valid run. Flagging for human input."
+              echo "status=BLOCKED" >> "$GITHUB_OUTPUT"; echo "ran=false" >> "$GITHUB_OUTPUT"; exit 0 ;;
+            *)
+              echo "::error::Unknown result '$RESULT' in result.json (mapped exit 3)."
+              echo "status=MISSING" >> "$GITHUB_OUTPUT"; echo "ran=false" >> "$GITHUB_OUTPUT"; exit 3 ;;
           esac
+
+          # PASS: stage the produced patch series (seed mode writes $OUT/patches/).
           MOD=$(printf 'module-%02d' "$AFFECTED_MODULE")
-          if compgen -G "$OUT/*.patch" > /dev/null; then
+          if compgen -G "$OUT/patches/*.patch" > /dev/null; then
             rm -f "course-build/deltas/$MOD/"*.patch || true
-            cp "$OUT"/*.patch "course-build/deltas/$MOD/"
+            cp "$OUT"/patches/*.patch "course-build/deltas/$MOD/"
             echo "ran=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::warning::module-runner produced no patches in $OUT"
+            echo "::warning::result PASS but no patches in $OUT/patches (validate mode?). Nothing staged."
             echo "ran=false" >> "$GITHUB_OUTPUT"
           fi
 
@@ -168,11 +187,18 @@ jobs:
         working-directory: legacy-app
         run: |
           set -euo pipefail
-          if [ "${{ steps.regen.outcome }}" = "success" ]; then
-            echo "conflict=false" >> "$GITHUB_OUTPUT"
-          else
+          RUNNER_STATUS="${{ steps.runner.outputs.status }}"
+          if [ "${{ steps.regen.outcome }}" != "success" ]; then
             echo "conflict=true" >> "$GITHUB_OUTPUT"
+            echo "reason=cascade" >> "$GITHUB_OUTPUT"
             echo "::warning::Regeneration failed to apply cleanly — likely an app-code cascade conflict downstream of module $AFFECTED_MODULE. Flagging for human resolution."
+          elif [ "$RUNNER_STATUS" = "BLOCKED" ]; then
+            echo "conflict=true" >> "$GITHUB_OUTPUT"
+            echo "reason=blocked" >> "$GITHUB_OUTPUT"
+            echo "::warning::module-runner reported BLOCKED — flagging for human input."
+          else
+            echo "conflict=false" >> "$GITHUB_OUTPUT"
+            echo "reason=none" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Commit updated delta store
@@ -199,6 +225,8 @@ jobs:
         run: |
           set -euo pipefail
           CONFLICT="${{ steps.conflicts.outputs.conflict }}"
+          CREASON="${{ steps.conflicts.outputs.reason }}"
+          RSTATUS="${{ steps.runner.outputs.status }}"
           TITLE="regen: ACC module ${AFFECTED_MODULE} delta update (${{ steps.norm.outputs.acc_version }})"
           LABELS="acc-regen"
           BODY_FILE="$(mktemp)"
@@ -213,8 +241,12 @@ jobs:
             echo "| acc_ref | ${ACC_REF} |"
             echo "| acc_version | ${{ steps.norm.outputs.acc_version }} |"
             echo "| reason | ${REASON} |"
+            echo "| module-runner result | ${RSTATUS} |"
             echo
-            if [ "$CONFLICT" = "true" ]; then
+            if [ "$CONFLICT" = "true" ] && [ "$CREASON" = "blocked" ]; then
+              echo "> [!CAUTION]"
+              echo "> **Manual input required.** module-runner returned \`BLOCKED\` — a prerequisite, credential, or external service prevented a valid seed run for module ${AFFECTED_MODULE}. See the run log / \`result.json\`. No delta was auto-proposed; a human must unblock and re-run."
+            elif [ "$CONFLICT" = "true" ]; then
               echo "> [!CAUTION]"
               echo "> **Manual resolution required.** Regeneration hit a cascade conflict applying the stored downstream deltas on top of the updated module ${AFFECTED_MODULE} (app-code modules M05/M06 carry real code). The affected downstream delta(s) must be re-authored by a human before this can validate. App-code conflicts are never auto-resolved."
             else
@@ -225,7 +257,8 @@ jobs:
             echo "On merge, \`promote-branches.yml\` will atomically move the \`start-of-module-N\` aliases and cut \`acc-${{ steps.norm.outputs.acc_version }}/start-of-module-N\` tags."
           } > "$BODY_FILE"
 
-          if [ "$CONFLICT" = "true" ]; then LABELS="$LABELS,needs-human-resolution,app-code-conflict"; fi
+          if [ "$CONFLICT" = "true" ] && [ "$CREASON" = "blocked" ]; then LABELS="$LABELS,needs-human-resolution,runner-blocked";
+          elif [ "$CONFLICT" = "true" ]; then LABELS="$LABELS,needs-human-resolution,app-code-conflict"; fi
 
           # Ensure labels exist (ignore errors if they already do).
           for l in $(echo "$LABELS" | tr ',' ' '); do gh label create "$l" -c "#B60205" -f >/dev/null 2>&1 || true; done

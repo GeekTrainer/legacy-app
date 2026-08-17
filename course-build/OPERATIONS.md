@@ -32,7 +32,7 @@ gh variable set ACC_REPO --repo GeekTrainer/legacy-app --body 'GeekTrainer/advan
 # The receiver defaults to the invocation below when this var is unset; override
 # it only to pin a specific --model.
 # gh variable set ACC_MODULE_RUNNER_CMD --repo GeekTrainer/legacy-app \
-#   --body 'copilot -p "mode=seed module={module} base-ref={base-ref} acc-ref={acc_ref} repo={target} out={out}" --allow-all --log-level error'
+#   --body 'copilot -p "Run module-runner in validator/seed mode with: mode=seed module={module} base-ref={base-ref} acc-ref={acc_ref} repo={target} out={out}" --allow-all --log-level error'
 ```
 
 If `ACC_REPO` is unset the receiver defaults to `GeekTrainer/advanced-copilot-cli`. If `ACC_MODULE_RUNNER_CMD` is unset the receiver skips the runner step (no auto-proposal) but still regenerates from stored deltas.
@@ -53,16 +53,16 @@ If `ACC_REPO` is unset the receiver defaults to `GeekTrainer/advanced-copilot-cl
 
 ## 4. Module-runner contract (ACC PR #18)
 
-The receiver treats the runner as: named inputs `module` / `base-ref` / `acc-ref` / `repo` / `out`; a machine-readable `result.json` written to `out`; exit codes:
+The runner runs inside a Copilot session, so **`{out}/result.json` is authoritative, not the `copilot` process exit code**. The receiver reads `result.json.result` and maps:
 
-| exit | meaning | receiver behavior |
-| ---- | ------- | ----------------- |
-| 0 | PASS | stage produced `*.patch`, continue |
-| 1 | FAIL | warn, no patches staged, PR still opened from stored deltas |
-| 2 | usage | hard error — fix `ACC_MODULE_RUNNER_CMD` |
-| 3 | BLOCKED | needs human input — flagged, no auto-proposal |
+| `result` | receiver behavior | mapped exit |
+| -------- | ----------------- | ----------- |
+| `PASS` | stage `{out}/patches/*.patch`, continue | 0 |
+| `FAIL` | warn, no patches staged, PR still opened from stored deltas | 1 |
+| `BLOCKED` | flag for human input (`runner-blocked`), no auto-proposal | 2 |
+| missing / unparseable | hard error — fail the run | 3 |
 
-Coordinate the exact `ACC_MODULE_RUNNER_CMD` wording and `result.json` schema with the ACC session before enabling auto-proposal.
+The full `result.json` schema is documented in `REFS.md`. The receiver defaults `ACC_MODULE_RUNNER_CMD` to the invocation below; override only to pin a specific `--model`.
 
 ## Provisioning checklist
 

@@ -95,7 +95,7 @@ App-code cascade conflicts (M05/M06 carry real code) are **flagged for human res
 `module-runner` is a **Copilot skill**, invoked by running Copilot CLI in seed mode — not a standalone script. The dispatch receiver expands an invocation template (`ACC_MODULE_RUNNER_CMD`) and runs it from the ACC checkout. Recommended pinned invocation:
 
 ```
-copilot -p "mode=seed module={module} base-ref={base-ref} acc-ref={acc_ref} repo={target} out={out}" --allow-all --log-level error
+copilot -p "Run module-runner in validator/seed mode with: mode=seed module={module} base-ref={base-ref} acc-ref={acc_ref} repo={target} out={out}" --allow-all --log-level error
 ```
 
 Placeholders expanded by the receiver (both hyphen and underscore forms accepted):
@@ -111,14 +111,26 @@ Placeholders expanded by the receiver (both hyphen and underscore forms accepted
 > [!NOTE]
 > ACC's suggested wording `base-ref=start-of-module-{module}` is **not** zero-padded and would produce `start-of-module-4`; our branch names are two-digit. Use `{base-ref}`, which the receiver injects zero-padded, rather than `start-of-module-{module}`.
 
-The runner writes a machine-readable `result.json` into `{out}` and signals via exit code:
+The runner runs **inside** a Copilot session, so its process exit code is **not** authoritative — the receiver reads `{out}/result.json` and maps its `result` field. `result.json` is written as the final action of every run (including failures):
 
-| exit | `result.json` status | receiver behavior |
-| ---- | -------------------- | ----------------- |
-| `0` | `PASS` | stage produced `*.patch`, continue to regen + PR |
-| `1` | `FAIL` | warn; no patches staged; PR still opened from stored deltas |
-| `2` | (usage) | hard error — fix `ACC_MODULE_RUNNER_CMD` template |
-| `3` | `BLOCKED` | needs human input; flagged, no auto-proposal |
+```json
+{ "schema_version": 1, "mode": "seed", "module": 4,
+  "base_ref": "start-of-module-04", "acc_ref": "<full-40-char-acc-sha>",
+  "produced_branch": "start-of-module-05", "result": "PASS",
+  "patches": ["patches/0001-....patch"],
+  "verification": [ { "name": "playwright a11y suite", "command": "npm run test:e2e", "status": "pass" } ],
+  "issues_report": "issues/04-issues.md",
+  "started_at": "<ISO-8601>", "finished_at": "<ISO-8601>" }
+```
+
+| `result.json` `result` | meaning | receiver behavior | mapped exit |
+| ---------------------- | ------- | ----------------- | ----------- |
+| `PASS` | produced + all verification passed | stage `{out}/patches/*.patch`, continue to regen + PR | 0 |
+| `FAIL` | a verification step failed | warn; no patches staged; PR still opened from stored deltas | 1 |
+| `BLOCKED` | prereq/credential/external service prevented a valid run | flag for human input (`needs-human-resolution`, `runner-blocked`); no auto-proposal | 2 |
+| missing / unparseable | no/!valid `result.json` | hard error, fail the run | 3 |
+
+In `mode=validate` (pure gate) the runner omits `patches` and `produced_branch`. Seed patches are a `git format-patch` series in commit order under `{out}/patches/`, with stable messages `chore(seed): module <N> produced-state for start-of-module-<N+1> [acc:<short-sha>]`. The skill never pushes, opens PRs, or promotes — the receiver consumes `patches/` + `result.json`.
 
 Provisioning of `ACC_MODULE_RUNNER_CMD`, `ACC_REPO`, tokens, and the promotion environment is documented in [`OPERATIONS.md`](./OPERATIONS.md).
 
