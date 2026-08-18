@@ -1,0 +1,782 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: acc-course-bot <acc-course-bot@users.noreply.github.com>
+Date: Wed, 1 Jan 2020 00:00:00 +0000
+Subject: [PATCH 1/1] feat(module-06): modernize audit-svc + auth-svc to Spring
+ Boot 3.5 / Java 21
+
+Module 6 seed: Java LSP config, saved migration plan, Java migrator agent, playbook, extended test router, and the modernization of audit-svc and auth-svc (Boot 2.7->3.5.3, Java 11->21, javax->jakarta) with baseline test suites.
+---
+ .github/agents/java-migrator.agent.md         |  27 +++
+ .github/hooks/scripts/test-router.sh          |   4 +
+ .github/lsp.json                              |  11 +
+ docs/modernization/audit-svc-plan.md          | 226 ++++++++++++++++++
+ docs/modernization/migration-playbook.md      |  30 +++
+ package.json                                  |   4 +-
+ services/audit-svc/pom.xml                    |  11 +-
+ .../contoso/audit/AuditApplicationTests.java  |  14 ++
+ .../contoso/audit/AuditControllerTest.java    |  51 ++++
+ .../contoso/audit/AuditRepositoryTest.java    |  40 ++++
+ .../com/contoso/audit/AuditTestSupport.java   |  24 ++
+ .../java/com/contoso/audit/DataInitTest.java  |  31 +++
+ services/auth-svc/pom.xml                     |  11 +-
+ .../main/java/com/contoso/auth/JwtIssuer.java |   2 +-
+ .../contoso/auth/AuthApplicationTests.java    |  13 +
+ .../com/contoso/auth/AuthTestSupport.java     |  20 ++
+ .../com/contoso/auth/TokenControllerTest.java |  58 +++++
+ 17 files changed, 568 insertions(+), 9 deletions(-)
+ create mode 100644 .github/agents/java-migrator.agent.md
+ create mode 100644 .github/lsp.json
+ create mode 100644 docs/modernization/audit-svc-plan.md
+ create mode 100644 docs/modernization/migration-playbook.md
+ create mode 100644 services/audit-svc/src/test/java/com/contoso/audit/AuditApplicationTests.java
+ create mode 100644 services/audit-svc/src/test/java/com/contoso/audit/AuditControllerTest.java
+ create mode 100644 services/audit-svc/src/test/java/com/contoso/audit/AuditRepositoryTest.java
+ create mode 100644 services/audit-svc/src/test/java/com/contoso/audit/AuditTestSupport.java
+ create mode 100644 services/audit-svc/src/test/java/com/contoso/audit/DataInitTest.java
+ create mode 100644 services/auth-svc/src/test/java/com/contoso/auth/AuthApplicationTests.java
+ create mode 100644 services/auth-svc/src/test/java/com/contoso/auth/AuthTestSupport.java
+ create mode 100644 services/auth-svc/src/test/java/com/contoso/auth/TokenControllerTest.java
+
+diff --git a/.github/agents/java-migrator.agent.md b/.github/agents/java-migrator.agent.md
+new file mode 100644
+index 0000000..f0eb961
+--- /dev/null
++++ b/.github/agents/java-migrator.agent.md
+@@ -0,0 +1,27 @@
++---
++description: 'Modernizes one legacy Java service (and only its wiring) through a saved migration plan, one reviewable phase at a time.'
++name: 'Java migrator'
++tools: [read, edit, execute, search]
++---
++
++# Java migrator
++
++You modernize **one** legacy Java service at a time by following a saved migration plan. You are scoped to the target service and the repository wiring that service depends on — **never** another service's source or the frontend. Your scope is an instruction you must hold to, not a sandbox: `edit` and `execute` can reach the whole repo, so stay inside the service you were asked to migrate.
++
++## Process (one phase at a time)
++
++1. **Read the plan.** Read `docs/modernization/audit-svc-plan.md` (or the plan named for the service you were asked to migrate). Treat its phases as the contract.
++2. **Confirm the safety net.** Run the service's Maven tests and confirm the baseline is green *before* changing anything. If there is no baseline suite, stop and say so.
++3. **Apply one phase, then stop.** Make only the changes for the current phase. After each phase, run the service's tests (`mvn verify` / `mvn test` from the service directory) and **stop for approval before starting the next phase.** Report the result of each phase; if a phase fails, report the failure and wait — do not press on.
++4. **Finish the job.** Once every phase is approved and green:
++   - Run the Playwright end-to-end suite (`npm run test:e2e`) as a final cross-system gate.
++   - Wire the modernized service into the repo's test router (`.github/hooks/scripts/test-router.sh`) so its tests run on edits.
++   - Clean up the dev script in `package.json` (drop the `scripts/with-java11` wrapper once the service targets Java 21).
++5. **Report.** End with a testing status report that names the target stack (e.g. Java 21 / Spring Boot 3.5.3) and confirms **both** layers passed on it: the service's unit/integration tests and the end-to-end suite. State clearly anything you could not verify.
++
++## Guardrails
++
++- Keep `JdbcTemplate` data access as-is during a framework bump. A move to Spring Data JPA is a separate project, not part of the upgrade.
++- Do not copy another service's dependencies (e.g. `workforce-svc`'s JPA/Hibernate) into the service you're migrating.
++- Only `javax.*` packages that Jakarta EE renamed move to `jakarta.*` (e.g. `javax.annotation.PostConstruct` → `jakarta.annotation.PostConstruct`). `javax.sql.*` is Java SE and does **not** change.
++- Read the diff at every gate. Validation between phases is where a fast upgrade catches its own mistakes.
+diff --git a/.github/hooks/scripts/test-router.sh b/.github/hooks/scripts/test-router.sh
+index fc8d073..c5ea1c0 100755
+--- a/.github/hooks/scripts/test-router.sh
++++ b/.github/hooks/scripts/test-router.sh
+@@ -20,6 +20,8 @@ stack_for_file() {
+   case "$1" in
+     services/assets-svc/*.cs) echo dotnet ;;
+     services/workforce-svc/*.java|services/workforce-svc/pom.xml) echo java ;;
++    services/audit-svc/*.java|services/audit-svc/pom.xml) echo audit ;;
++    services/auth-svc/*.java|services/auth-svc/pom.xml) echo auth ;;
+     services/reporting-svc/*.py|services/reporting-svc/pyproject.toml) echo python ;;
+     services/web/*.astro|services/web/*.ts|services/web/*.tsx|tests/playwright/*.ts|playwright.config.ts|package.json|package-lock.json) echo playwright ;;
+   esac
+@@ -29,6 +31,8 @@ run_stack() {
+   case "$1" in
+     dotnet) NAME=".NET"; COMMAND="dotnet test services/assets-svc/Tests/AssetsService.Tests.csproj" ;;
+     java) NAME="Java"; COMMAND="cd services/workforce-svc && mvn test --no-transfer-progress" ;;
++    audit) NAME="Java (audit-svc)"; COMMAND="cd services/audit-svc && mvn test --no-transfer-progress" ;;
++    auth) NAME="Java (auth-svc)"; COMMAND="cd services/auth-svc && mvn test --no-transfer-progress" ;;
+     python) NAME="Python"; COMMAND="cd services/reporting-svc && pytest" ;;
+     playwright) NAME="Web / Playwright"; COMMAND="npm run test:e2e" ;;
+     *) return 0 ;;
+diff --git a/.github/lsp.json b/.github/lsp.json
+new file mode 100644
+index 0000000..a064c1c
+--- /dev/null
++++ b/.github/lsp.json
+@@ -0,0 +1,11 @@
++{
++    "lspServers": {
++        "java": {
++            "command": "jdtls",
++            "args": [],
++            "fileExtensions": {
++                ".java": "java"
++            }
++        }
++    }
++}
+diff --git a/docs/modernization/audit-svc-plan.md b/docs/modernization/audit-svc-plan.md
+new file mode 100644
+index 0000000..30bdb47
+--- /dev/null
++++ b/docs/modernization/audit-svc-plan.md
+@@ -0,0 +1,226 @@
++# Migration plan: `audit-svc` from Spring Boot 2.7.18 / Java 11 to Spring Boot 3.5.3 / Java 21
++
++## 1. Executive summary
++
++`audit-svc` is a small, append-only audit-log microservice [pinned to Spring Boot 2.7.18 / Java 11][pom-audit-L8], while its sibling [`workforce-svc` already runs on Spring Boot 3.5.3 / Java 21][pom-wf]. It uses only `spring-boot-starter-web`, `spring-boot-starter-jdbc`, raw `JdbcTemplate`, and `sqlite-jdbc` — [no JPA, no Hibernate, and no `javax.*` application imports][pom-audit-L22] — so the dependency surface of this migration is unusually narrow. The mandatory changes are small: two edits in `pom.xml` and one in `package.json`, on top of a baseline test suite added first. The plan isolates the work into sequential phases — baseline safety net, toolchain alignment, framework bump, and stabilization — so each phase can be verified and rolled back independently.
++
++## 2. Current state vs. target state
++
++| Dimension | Current (`audit-svc`) | Target | Source |
++|---|---|---|---|
++| Spring Boot parent | `2.7.18` | `3.5.3` | [pom.xml L8][pom-audit-L8] → [workforce pom][pom-wf] |
++| Java source/target | `11` | `21` | [pom.xml L19][pom-audit-L19] |
++| Local launcher | `scripts/with-java11 mvn …` | plain `mvn …` | [package.json L11][pkg-L11] |
++| Persistence | Raw `JdbcTemplate` + SQLite | unchanged | [AuditRepository.java][repo-audit] |
++| `javax.*` imports | None | N/A — no changes needed | all four `.java` files |
++| Tests | None | Baseline suite before migration | — |
++
++## 3. Scope and key decisions
++
++### In scope
++
++- Bump the Spring Boot parent from `2.7.18` to `3.5.3` and Java from `11` to `21`.
++- Align the toolchain references (`package.json` launcher, IDE metadata) with the new runtime.
++- Add a baseline test suite *before* any framework change, so regressions are detectable.
++
++### Explicitly out of scope
++
++| Out-of-scope item | Rationale |
++|---|---|
++| Adding Spring Data JPA / Hibernate | `audit-svc` uses raw `JdbcTemplate`, which is fully supported under [Spring Framework 6.2 / Boot 3.5][jdbctemplate]. JPA would add an ORM layer, schema-management risk, and dialect pinning to a service that runs three simple SQL statements. See the optional follow-on. |
++| Copying `workforce-svc` JPA dependencies | `workforce-svc` carries `spring-boot-starter-data-jpa`, `hibernate-community-dialects`, and `spring.jpa.*` properties. Those are workforce-specific and must not be introduced into `audit-svc`. |
++| Fixing the intentional SQL injection | [`AuditRepository.search()`][repo-audit] carries a documented course-exercise comment. That is a separate educational concern, unrelated to the platform migration, and should be tracked as its own issue. |
++| Mandating a Hikari `maximum-pool-size=1` | SQLite's single-writer model and connection-scoped `last_insert_rowid()` are pre-existing realities. Pool hardening reduces write throughput, so it belongs in Phase 4 as a separately validated option. |
++
++### Why no `javax` → `jakarta` source changes are needed
++
++[Jakarta EE 9 renamed the `javax.*` packages][jakarta-ee-9] (for example `javax.persistence` → `jakarta.persistence`, `javax.servlet` → `jakarta.servlet`), and [Spring Boot 3.0 pulls in those Jakarta EE 9+ artifacts][boot3-migration]. However, `javax.sql` is part of the **Java SE** standard library, not Jakarta EE, and has never been renamed — it remains `javax.sql` in Java 21. A scan of all four `audit-svc` source files confirms zero `javax.*` imports: they use only `org.springframework.*` and `java.util.*`. No application source file requires modification for the namespace change.
++
++### Direct version jump is appropriate
++
++The [Spring Boot migration guidance][boot-upgrading] is to start from the latest 2.7.x before upgrading to 3.x. `audit-svc` is already on `2.7.18`, the final 2.7.x maintenance release, so a direct jump to `3.5.3` — the version `workforce-svc` already runs — keeps both services on a single, supported baseline. The phases below still isolate the Java/toolchain change from the framework bump so each step is independently verifiable.
++
++## 4. Phased migration plan
++
++### Phase 0 — Baseline safety net (no functional changes)
++
++**Goal:** establish tests and confirm the service compiles and runs on Java 11 / Boot 2.7.18 before anything touches the runtime. Without tests, any regression during the migration is invisible, and the service currently has none.
++
++1. Add `spring-boot-starter-test` to `services/audit-svc/pom.xml` inside `<dependencies>`. It comes from the Boot parent BOM, needs no explicit version, and brings JUnit 5, AssertJ, Mockito, MockMvc, and `@SpringBootTest`:
++
++    ```xml
++    <dependency>
++        <groupId>org.springframework.boot</groupId>
++        <artifactId>spring-boot-starter-test</artifactId>
++        <scope>test</scope>
++    </dependency>
++    ```
++
++2. Create `src/test/java/com/contoso/audit/` with tests covering these contracts (exact content is your choice):
++
++    | Test class | What it verifies |
++    |---|---|
++    | `AuditApplicationTests` | `@SpringBootTest` context loads without errors |
++    | `AuditControllerTest` | `GET /health` → 200, body `{"status":"ok","service":"audit-svc"}`; `POST /events` with a valid body → 200 with a numeric `id`; `GET /events` → 200 returning a JSON array |
++    | `AuditRepositoryTest` | `insert(...)` persists a row and returns a positive `id`; `recent(n)` returns ≤ n rows; `search("assign")` returns matching rows |
++    | `DataInitTest` | running schema init twice does not throw and does not duplicate seed rows (idempotency) |
++
++    Point the tests at an isolated SQLite database (`jdbc:sqlite::memory:` or a temp-file URL) so they never touch production data.
++
++3. Validate on the current stack, still Java 11 / Boot 2.7.18, and record the pass counts:
++
++    ```bash
++    cd services/audit-svc && mvn verify
++    ```
++
++**Exit criteria:** proceed only when `mvn verify` passes cleanly. Do not start Phase 1 with failing tests — pre-existing failures would mask migration regressions.
++
++### Phase 1 — Java 21 and toolchain alignment (Boot stays 2.7.18)
++
++**Goal:** switch the local JDK and every toolchain reference to Java 21 while keeping Spring Boot at 2.7.18, so the Java change is independently verifiable. Running Boot 2.7.18 on Java 21 is an intentionally *brief*, transitional step — validate quickly and move straight to Phase 2, where the framework bump puts the service on a combination Spring fully supports.
++
++1. In [`services/audit-svc/pom.xml` L19][pom-audit-L19], change `<java.version>11</java.version>` to `<java.version>21</java.version>`. The `<parent>` block stays `2.7.18` for now.
++
++2. In [`package.json` L11][pkg-L11], remove the `../../scripts/with-java11` wrapper from the `dev:audit` script so it runs `mvn` directly, matching `dev:workforce`. Leave `dev:auth` (L12) untouched — `auth-svc` still needs the Java 11 shim, and the devcontainer still installs both JDKs.
++
++3. Optionally, update the IDE metadata the language server generates so it stops flagging false Java 21 errors. These files aren't committed — the language server creates them locally when it imports the project — so edit them only if you see stale errors: in `services/audit-svc/.settings/org.eclipse.jdt.core.prefs`, set the three compiler values to `21`, and in `services/audit-svc/.classpath`, change the JRE container from `JavaSE-11` to `JavaSE-21`:
++
++    ```properties
++    org.eclipse.jdt.core.compiler.codegen.targetPlatform=21
++    org.eclipse.jdt.core.compiler.compliance=21
++    org.eclipse.jdt.core.compiler.source=21
++    ```
++
++4. Confirm `java -version` reports a 21.x JDK, then validate:
++
++    ```bash
++    cd services/audit-svc && mvn verify
++    ```
++
++**Exit criteria:** proceed when the Phase 0 tests still pass under Java 21. If Boot 2.7.18 on Java 21 throws fatal startup errors, document them and move to Phase 2 immediately — the Boot 3 bump resolves them. The `package.json` change is safe regardless and need not be reverted.
++
++### Phase 2 — Spring Boot parent bump to 3.5.3 (core phase)
++
++**Goal:** bump the Spring Boot parent to `3.5.3`, confirm dependencies resolve, verify no `javax`→`jakarta` renames are needed, and run the full suite.
++
++1. In [`services/audit-svc/pom.xml`][pom-audit-L8], change the parent `<version>` from `2.7.18` to `3.5.3`:
++
++    ```xml
++    <parent>
++        <groupId>org.springframework.boot</groupId>
++        <artifactId>spring-boot-starter-parent</artifactId>
++        <version>3.5.3</version>
++        <relativePath/>
++    </parent>
++    ```
++
++    That is the only required `pom.xml` change beyond the `java.version` already set in Phase 1. The three existing dependencies (`spring-boot-starter-web`, `spring-boot-starter-jdbc`, `sqlite-jdbc 3.45.3.0`) all work under Boot 3.5 — `workforce-svc` uses the same `sqlite-jdbc` version.
++
++2. Optionally add `spring-boot-properties-migrator` (runtime scope) for this phase only, to catch any [renamed configuration keys][boot-upgrading], then remove it before committing. `audit-svc`'s `application.properties` has only three stable keys (`server.port`, `spring.datasource.url`, `spring.datasource.driver-class-name`), none renamed between Boot 2.7 and 3.5, so the migrator is a safety net rather than a necessity.
++
++3. Confirm the Jakarta review needs no code changes: all four source files import only `org.springframework.*` and `java.util.*`, and the one JDBC-adjacent type (`javax.sql.DataSource`, injected by auto-configuration) is Java SE and unchanged in Java 21.
++
++4. Do **not** copy `workforce-svc`'s JPA dependencies (`spring-boot-starter-data-jpa`, `hibernate-community-dialects`, `spring-boot-starter-validation`) or its `spring.jpa.*` properties — they are irrelevant to `audit-svc` and must stay absent.
++
++5. Validate:
++
++    ```bash
++    cd services/audit-svc
++    mvn dependency:tree   # confirm no resolution failures
++    mvn verify            # compile + all baseline tests pass
++    ```
++
++**Exit criteria:** proceed only when `mvn verify` is fully green with the same test count as Phase 0/1. Any failure here is directly attributable to the Boot 2.7 → 3.5 delta. Rollback is a single revert of the parent version.
++
++### Phase 3 — Stabilization
++
++**Goal:** post-migration cleanup and optional hardening.
++
++1. Remove `spring-boot-properties-migrator` if it was added in Phase 2 — it is not safe to ship.
++2. Evaluate SQLite concurrency only if load testing shows it: `last_insert_rowid()` is connection-scoped, so under a multi-connection pool concurrent `POST /events` requests can read the wrong id. If confirmed, either set `spring.datasource.hikari.maximum-pool-size=1` (serializes writes, lowers throughput) or wrap the insert and id read in a single-connection block. This is not a required consequence of the Boot 3 upgrade.
++3. Add a minimal CI workflow running `mvn verify` on Java 21 so the modern stack stays green:
++
++    ```yaml
++    name: audit-svc CI
++    on: [push, pull_request]
++    jobs:
++      build:
++        runs-on: ubuntu-latest
++        steps:
++          - uses: actions/checkout@v4
++          - uses: actions/setup-java@v4
++            with: { java-version: '21', distribution: 'temurin' }
++          - run: mvn -B verify
++            working-directory: services/audit-svc
++    ```
++
++### Optional follow-on: Spring Data JPA (not required)
++
++If a future decision moves `audit-svc` from `JdbcTemplate` to Spring Data JPA for consistency with `workforce-svc`, treat it as a **separate project on its own branch**: add the JPA and dialect dependencies, model an `AuditEvent` `@Entity` and a `JpaRepository`, rewrite `AuditRepository`/`DataInit` and all tests, and add `spring.jpa.*` properties. It changes schema management and connection handling and risks data-type mapping issues, and the [Boot 3.0 guide][boot3-migration] specifically warns about Hibernate 6 behavioral changes. It does not belong in this framework bump.
++
++## 5. Exact file change matrix
++
++| File | Phase | Change | Before | After |
++|---|---|---|---|---|
++| [`audit-svc/pom.xml` L19][pom-audit-L19] | 1 | Edit | `<java.version>11</java.version>` | `<java.version>21</java.version>` |
++| [`audit-svc/pom.xml` L8][pom-audit-L8] | 2 | Edit | `<version>2.7.18</version>` | `<version>3.5.3</version>` |
++| [`audit-svc/pom.xml` L22–36][pom-audit-L22] | 0 | Add | *(no test dep)* | `spring-boot-starter-test` (`test` scope) |
++| [`package.json` L11][pkg-L11] | 1 | Edit | `../../scripts/with-java11 mvn …` | `mvn …` (drop wrapper) |
++| `services/auth-svc/*` | — | No change | `with-java11` still needed | left as-is |
++| `audit-svc/src/**/*.java` | — | No change | zero `javax` imports | no changes needed |
++| `audit-svc/.../application.properties` | — | No change | 3 stable keys | no changes needed |
++
++## 6. Risk register
++
++| ID | Risk | Likelihood | Impact | Phase | Mitigation |
++|---|---|---|---|---|---|
++| R1 | No existing tests — regressions invisible | High (confirmed) | High | Pre-0 | Add the baseline suite in Phase 0 before any change |
++| R2 | Boot 2.7.18 on Java 21 is transitional | Medium | Medium | 1 | Keep Phase 1 brief; proceed to Phase 2 |
++| R3 | IDE shows false Java 11 errors after the pom change | Medium | Low | 1 | Update the locally generated `.classpath`/`.settings` |
++| R4 | `with-java11` still needed by `auth-svc` | Medium | High if broken | 1 | Do not touch `dev:auth` in `package.json` |
++| R5 | Boot 3 / Jakarta dependency incompatibility | Low (small tree) | High | 2 | `mvn dependency:tree`; properties migrator; [migration guide][boot3-migration] |
++| R6 | Transitive dependency pulls a `javax.*` artifact | Low | Medium | 2 | `mvn dependency:tree` and inspect |
++| R7 | `last_insert_rowid()` wrong under concurrency | Medium (pre-existing) | Medium | 3 | Load test; pool-size=1 or single-connection wrapper |
++| R8 | SQL injection in `search()` | High (intentional) | High | Out of scope | Track as a separate issue; keep it out of the migration |
++| R9 | Scope creep into `workforce-svc` JPA | Medium | High | All | Scope boundary above explicitly excludes JPA |
++
++## 7. Validation checklist
++
++**Phase 0 — baseline**
++
++- [ ] `spring-boot-starter-test` added to `pom.xml`
++- [ ] Context-load, controller, repository, and idempotency tests written
++- [ ] `mvn verify` passes on Java 11 / Boot 2.7.18
++
++**Phase 1 — toolchain**
++
++- [ ] `pom.xml` `java.version` set to `21`
++- [ ] `package.json` `dev:audit` no longer invokes `with-java11`
++- [ ] *(optional)* locally generated `.settings`/`.classpath` set to Java 21
++- [ ] `mvn verify` passes on Java 21 / Boot 2.7.18
++
++**Phase 2 — framework**
++
++- [ ] `pom.xml` parent set to `3.5.3`
++- [ ] `mvn dependency:tree` shows no resolution failures
++- [ ] `mvn verify` — all baseline tests pass on Java 21 / Boot 3.5.3
++- [ ] Endpoints respond: `GET /health`, `POST /events`, `GET /events`
++
++**Phase 3 — stabilization**
++
++- [ ] `spring-boot-properties-migrator` removed if it was added
++- [ ] SQLite pool behavior evaluated and the decision documented
++- [ ] CI workflow added and passing on Java 21
++
++## Sources
++
++[pom-audit-L8]: https://github.com/GeekTrainer/legacy-app/blob/3689288d1f5a9ed6871db94a09c2e651bc20af3e/services/audit-svc/pom.xml#L8
++[pom-audit-L19]: https://github.com/GeekTrainer/legacy-app/blob/3689288d1f5a9ed6871db94a09c2e651bc20af3e/services/audit-svc/pom.xml#L19
++[pom-audit-L22]: https://github.com/GeekTrainer/legacy-app/blob/3689288d1f5a9ed6871db94a09c2e651bc20af3e/services/audit-svc/pom.xml#L22-L36
++[pom-wf]: https://github.com/GeekTrainer/legacy-app/blob/3689288d1f5a9ed6871db94a09c2e651bc20af3e/services/workforce-svc/pom.xml#L7-L21
++[pkg-L11]: https://github.com/GeekTrainer/legacy-app/blob/3689288d1f5a9ed6871db94a09c2e651bc20af3e/package.json#L11
++[repo-audit]: https://github.com/GeekTrainer/legacy-app/blob/3689288d1f5a9ed6871db94a09c2e651bc20af3e/services/audit-svc/src/main/java/com/contoso/audit/AuditRepository.java
++[boot3-migration]: https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-3.0-Migration-Guide
++[boot-upgrading]: https://docs.spring.io/spring-boot/upgrading.html
++[jakarta-ee-9]: https://jakartaee.github.io/platform/jakartaee9/JakartaEE9ReleasePlan
++[jdbctemplate]: https://docs.spring.io/spring-framework/reference/data-access/jdbc/core.html
+diff --git a/docs/modernization/migration-playbook.md b/docs/modernization/migration-playbook.md
+new file mode 100644
+index 0000000..0d6bd53
+--- /dev/null
++++ b/docs/modernization/migration-playbook.md
+@@ -0,0 +1,30 @@
++# Java modernization playbook
++
++> A reusable recipe for moving an AssetTrack Java service from Spring Boot 2.7 / Java 11 to Spring Boot 3.5 / Java 21. Distilled from modernizing `audit-svc` and `auth-svc`. Use it with the `Java migrator` agent.
++
++## The loop
++
++Assess → Plan → Protect → Migrate → Validate → Document. An agent changes the speed of each step, not the need for it.
++
++## Recipe
++
++1. **Assess.** Confirm the current stack (`pom.xml` parent + `java.version`), the dependency surface, and whether the service imports any renamed `javax.*` packages. Use the LSP (`.github/lsp.json` → `jdtls`) for precise caller/symbol lookups rather than text search.
++2. **Plan.** Target the exact versions `workforce-svc` already runs (`spring-boot-starter-parent` `3.5.3`, `java.version` `21`) rather than a generic "3.x". Keep the plan phased so each step is independently verifiable and revertible.
++3. **Protect — build the safety net first.** Add `spring-boot-starter-test` (`test` scope) and characterization tests *before* touching the framework: a `@SpringBootTest` context-load test, endpoint contract tests, and repository behavior tests. Point them at an **isolated temporary SQLite database** (never `/data/*.db`) and set `spring.datasource.hikari.maximum-pool-size=1` so connection-scoped `last_insert_rowid()` is deterministic. Confirm green on the *old* stack first.
++4. **Migrate in order.**
++   - Phase 1 — toolchain: `java.version` `11` → `21`; drop the `../../scripts/with-java11` wrapper from the service's `dev:*` script in `package.json`.
++   - Phase 2 — framework: `spring-boot-starter-parent` `2.7.18` → `3.5.3`.
++   - Rename only Jakarta-affected imports (`javax.annotation.*`, `javax.servlet.*`, `javax.persistence.*` → `jakarta.*`). Leave `javax.sql.*` (Java SE) alone.
++5. **Validate after every phase.** `mvn verify` from the service directory; the same test count must stay green. Run the Playwright e2e suite as the final cross-system gate. Wire the service into `.github/hooks/scripts/test-router.sh` so edits trigger its tests.
++6. **Document.** Update this playbook and the `Java migrator` agent with anything the upgrade taught you, so the next service is a repeat rather than a fresh start.
++
++## Lessons from the two services
++
++- **`audit-svc`** was the clean case: raw `JdbcTemplate`, **no** application `javax` imports, three dependencies. Only two `pom.xml` edits (parent + `java.version`) plus the test starter, and one `package.json` edit. 8 tests green on 3.5.3 / 21.
++- **`auth-svc`** is where the second-service value showed up: it carries the `jjwt` library for JWT issuance and is the one place that imports `javax.annotation.PostConstruct` → `jakarta.annotation.PostConstruct`. A red test after the framework bump is the safety net doing its job — hand the precise signal ("this name moved") back and adapt. 6 tests green on 3.5.3 / 21.
++
++## Explicitly out of scope for a framework bump
++
++- Introducing Spring Data JPA / Hibernate (separate project, own branch).
++- Fixing the intentional SQL-injection course-exercise code in the repositories (track separately).
++- Hardening SQLite pool behavior beyond test isolation (evaluate under load, separately).
+diff --git a/package.json b/package.json
+index abf18f1..040e873 100644
+--- a/package.json
++++ b/package.json
+@@ -8,8 +8,8 @@
+     "dev:workforce": "cd services/workforce-svc && mkdir -p data && SERVER_PORT=5002 WORKFORCE_DB_PATH=$PWD/data/workforce.db AUDIT_SVC_URL=http://localhost:5005 NOTIFICATIONS_SVC_URL=http://localhost:5004 AUTH_JWKS_URL=http://localhost:5006/.well-known/jwks LOGGING_LEVEL_ROOT=${LOG_LEVEL_JAVA:-WARN} mvn -q spring-boot:run",
+     "dev:reporting": "cd services/reporting-svc && mkdir -p data && ASSETS_SVC_URL=http://localhost:5001 WORKFORCE_SVC_URL=http://localhost:5002 uvicorn app.main:app --reload --host 0.0.0.0 --port 5003 --log-level ${LOG_LEVEL_PY:-warning}",
+     "dev:notifications": "cd services/notifications-svc && mkdir -p data && NOTIFICATIONS_DB_PATH=$PWD/data/notifications.db uvicorn app.main:app --reload --host 0.0.0.0 --port 5004 --log-level ${LOG_LEVEL_PY:-warning}",
+-    "dev:audit": "cd services/audit-svc && mkdir -p data && SERVER_PORT=5005 AUDIT_DB_PATH=$PWD/data/audit.db LOGGING_LEVEL_ROOT=${LOG_LEVEL_JAVA:-WARN} ../../scripts/with-java11 mvn -q spring-boot:run",
+-    "dev:auth": "cd services/auth-svc && mkdir -p data && SERVER_PORT=5006 AUTH_DB_PATH=$PWD/data/auth.db LOGGING_LEVEL_ROOT=${LOG_LEVEL_JAVA:-WARN} ../../scripts/with-java11 mvn -q spring-boot:run",
++    "dev:audit": "cd services/audit-svc && mkdir -p data && SERVER_PORT=5005 AUDIT_DB_PATH=$PWD/data/audit.db LOGGING_LEVEL_ROOT=${LOG_LEVEL_JAVA:-WARN} mvn -q spring-boot:run",
++    "dev:auth": "cd services/auth-svc && mkdir -p data && SERVER_PORT=5006 AUTH_DB_PATH=$PWD/data/auth.db LOGGING_LEVEL_ROOT=${LOG_LEVEL_JAVA:-WARN} mvn -q spring-boot:run",
+     "dev": "node scripts/dev-banner.mjs && concurrently --names web,assets,workforce,reporting,notif,audit,auth --prefix-colors auto --kill-others-on-fail npm:dev:web npm:dev:assets npm:dev:workforce npm:dev:reporting npm:dev:notifications npm:dev:audit npm:dev:auth",
+     "dev:verbose": "LOG_LEVEL_JAVA=INFO LOG_LEVEL_DOTNET=Information LOG_LEVEL_PY=info npm run dev",
+     "install:all": "npm --prefix services/web install && pip install -e services/reporting-svc && pip install -e services/notifications-svc",
+diff --git a/services/audit-svc/pom.xml b/services/audit-svc/pom.xml
+index 41f9bb2..b0ac182 100644
+--- a/services/audit-svc/pom.xml
++++ b/services/audit-svc/pom.xml
+@@ -5,7 +5,7 @@
+     <parent>
+         <groupId>org.springframework.boot</groupId>
+         <artifactId>spring-boot-starter-parent</artifactId>
+-        <version>2.7.18</version>
++        <version>3.5.3</version>
+         <relativePath/>
+     </parent>
+ 
+@@ -13,10 +13,10 @@
+     <artifactId>audit-svc</artifactId>
+     <version>0.1.0</version>
+     <name>audit-svc</name>
+-    <description>Append-only audit log (intentionally legacy: Spring Boot 2.7 / Java 11)</description>
++    <description>Append-only audit log (modernized: Spring Boot 3.5 / Java 21)</description>
+ 
+     <properties>
+-        <java.version>11</java.version>
++        <java.version>21</java.version>
+     </properties>
+ 
+     <dependencies>
+@@ -33,6 +33,11 @@
+             <artifactId>sqlite-jdbc</artifactId>
+             <version>3.45.3.0</version>
+         </dependency>
++        <dependency>
++            <groupId>org.springframework.boot</groupId>
++            <artifactId>spring-boot-starter-test</artifactId>
++            <scope>test</scope>
++        </dependency>
+     </dependencies>
+ 
+     <build>
+diff --git a/services/audit-svc/src/test/java/com/contoso/audit/AuditApplicationTests.java b/services/audit-svc/src/test/java/com/contoso/audit/AuditApplicationTests.java
+new file mode 100644
+index 0000000..0a7c791
+--- /dev/null
++++ b/services/audit-svc/src/test/java/com/contoso/audit/AuditApplicationTests.java
+@@ -0,0 +1,14 @@
++package com.contoso.audit;
++
++import org.junit.jupiter.api.Test;
++import org.springframework.boot.test.context.SpringBootTest;
++
++/** Verifies the Spring application context loads without errors. */
++@SpringBootTest
++class AuditApplicationTests extends AuditTestSupport {
++
++    @Test
++    void contextLoads() {
++        // The context starting (including the DataInit CommandLineRunner) is the assertion.
++    }
++}
+diff --git a/services/audit-svc/src/test/java/com/contoso/audit/AuditControllerTest.java b/services/audit-svc/src/test/java/com/contoso/audit/AuditControllerTest.java
+new file mode 100644
+index 0000000..633946b
+--- /dev/null
++++ b/services/audit-svc/src/test/java/com/contoso/audit/AuditControllerTest.java
+@@ -0,0 +1,51 @@
++package com.contoso.audit;
++
++import org.junit.jupiter.api.Test;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.context.SpringBootTest;
++import org.springframework.boot.test.web.client.TestRestTemplate;
++import org.springframework.http.HttpStatus;
++import org.springframework.http.ResponseEntity;
++
++import java.util.List;
++import java.util.Map;
++
++import static org.assertj.core.api.Assertions.assertThat;
++
++/** Contract tests for the audit HTTP endpoints. */
++@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
++class AuditControllerTest extends AuditTestSupport {
++
++    @Autowired
++    private TestRestTemplate rest;
++
++    @Test
++    void health_returnsOk() {
++        ResponseEntity<Map> res = rest.getForEntity("/health", Map.class);
++        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
++        assertThat(res.getBody()).containsEntry("status", "ok").containsEntry("service", "audit-svc");
++    }
++
++    @Test
++    void postEvents_withValidBody_returnsNumericId() {
++        Map<String, String> body = Map.of(
++                "actor", "tester", "action", "create", "entityType", "asset",
++                "entityId", "CON-TST-001", "details", "created in test");
++
++        ResponseEntity<Map> res = rest.postForEntity("/events", body, Map.class);
++
++        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
++        assertThat(res.getBody()).containsKey("id");
++        Number id = (Number) res.getBody().get("id");
++        assertThat(id.longValue()).isPositive();
++    }
++
++    @Test
++    void getEvents_returnsJsonArray() {
++        ResponseEntity<List> res = rest.getForEntity("/events", List.class);
++        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
++        assertThat(res.getBody()).isNotNull();
++        // Seed data is inserted on startup.
++        assertThat(res.getBody()).isNotEmpty();
++    }
++}
+diff --git a/services/audit-svc/src/test/java/com/contoso/audit/AuditRepositoryTest.java b/services/audit-svc/src/test/java/com/contoso/audit/AuditRepositoryTest.java
+new file mode 100644
+index 0000000..c0cef06
+--- /dev/null
++++ b/services/audit-svc/src/test/java/com/contoso/audit/AuditRepositoryTest.java
+@@ -0,0 +1,40 @@
++package com.contoso.audit;
++
++import org.junit.jupiter.api.Test;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.context.SpringBootTest;
++
++import java.util.List;
++import java.util.Map;
++
++import static org.assertj.core.api.Assertions.assertThat;
++
++/** Behavioral tests for the JdbcTemplate-backed repository. */
++@SpringBootTest
++class AuditRepositoryTest extends AuditTestSupport {
++
++    @Autowired
++    private AuditRepository repo;
++
++    @Test
++    void insert_persistsRow_andReturnsPositiveId() {
++        long id = repo.insert("tester", "assign", "asset", "CON-RPT-001", "repo test");
++        assertThat(id).isPositive();
++    }
++
++    @Test
++    void recent_returnsAtMostLimitRows() {
++        for (int i = 0; i < 5; i++) {
++            repo.insert("tester", "create", "asset", "CON-RPT-" + i, "row " + i);
++        }
++        List<Map<String, Object>> rows = repo.recent(3);
++        assertThat(rows).hasSizeLessThanOrEqualTo(3);
++    }
++
++    @Test
++    void search_returnsMatchingRows() {
++        repo.insert("tester", "assign", "asset", "CON-RPT-777", "assign match");
++        List<Map<String, Object>> rows = repo.search("assign");
++        assertThat(rows).isNotEmpty();
++    }
++}
+diff --git a/services/audit-svc/src/test/java/com/contoso/audit/AuditTestSupport.java b/services/audit-svc/src/test/java/com/contoso/audit/AuditTestSupport.java
+new file mode 100644
+index 0000000..5928e82
+--- /dev/null
++++ b/services/audit-svc/src/test/java/com/contoso/audit/AuditTestSupport.java
+@@ -0,0 +1,24 @@
++package com.contoso.audit;
++
++import org.springframework.test.context.DynamicPropertyRegistry;
++import org.springframework.test.context.DynamicPropertySource;
++
++import java.nio.file.Path;
++import java.util.UUID;
++
++/**
++ * Shared test configuration: point every test context at an isolated, temporary
++ * SQLite database (never production data) and force a single connection so
++ * connection-scoped {@code last_insert_rowid()} behaves deterministically.
++ */
++abstract class AuditTestSupport {
++
++    @DynamicPropertySource
++    static void datasource(DynamicPropertyRegistry registry) {
++        Path db = Path.of(System.getProperty("java.io.tmpdir"),
++                "audit-test-" + UUID.randomUUID().toString().replace("-", "") + ".db");
++        registry.add("spring.datasource.url", () -> "jdbc:sqlite:" + db);
++        registry.add("spring.datasource.driver-class-name", () -> "org.sqlite.JDBC");
++        registry.add("spring.datasource.hikari.maximum-pool-size", () -> "1");
++    }
++}
+diff --git a/services/audit-svc/src/test/java/com/contoso/audit/DataInitTest.java b/services/audit-svc/src/test/java/com/contoso/audit/DataInitTest.java
+new file mode 100644
+index 0000000..62288df
+--- /dev/null
++++ b/services/audit-svc/src/test/java/com/contoso/audit/DataInitTest.java
+@@ -0,0 +1,31 @@
++package com.contoso.audit;
++
++import org.junit.jupiter.api.Test;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.context.SpringBootTest;
++import org.springframework.jdbc.core.JdbcTemplate;
++
++import static org.assertj.core.api.Assertions.assertThat;
++
++/** Schema init is idempotent: re-running it neither throws nor duplicates seed rows. */
++@SpringBootTest
++class DataInitTest extends AuditTestSupport {
++
++    @Autowired
++    private JdbcTemplate jdbc;
++
++    @Autowired
++    private DataInit dataInit;
++
++    @Test
++    void reinitialize_isIdempotent() throws Exception {
++        Integer before = jdbc.queryForObject("SELECT COUNT(*) FROM audit_events", Integer.class);
++        assertThat(before).isNotNull();
++
++        // Run the initializer a second time; it must not throw or re-seed.
++        dataInit.initSchema(jdbc).run();
++
++        Integer after = jdbc.queryForObject("SELECT COUNT(*) FROM audit_events", Integer.class);
++        assertThat(after).isEqualTo(before);
++    }
++}
+diff --git a/services/auth-svc/pom.xml b/services/auth-svc/pom.xml
+index 775b857..d140cbb 100644
+--- a/services/auth-svc/pom.xml
++++ b/services/auth-svc/pom.xml
+@@ -5,7 +5,7 @@
+     <parent>
+         <groupId>org.springframework.boot</groupId>
+         <artifactId>spring-boot-starter-parent</artifactId>
+-        <version>2.7.18</version>
++        <version>3.5.3</version>
+         <relativePath/>
+     </parent>
+ 
+@@ -13,10 +13,10 @@
+     <artifactId>auth-svc</artifactId>
+     <version>0.1.0</version>
+     <name>auth-svc</name>
+-    <description>JWT issuer + user lookup (intentionally legacy: Spring Boot 2.7 / Java 11)</description>
++    <description>JWT issuer + user lookup (modernized: Spring Boot 3.5 / Java 21)</description>
+ 
+     <properties>
+-        <java.version>11</java.version>
++        <java.version>21</java.version>
+     </properties>
+ 
+     <dependencies>
+@@ -50,6 +50,11 @@
+             <version>0.11.5</version>
+             <scope>runtime</scope>
+         </dependency>
++        <dependency>
++            <groupId>org.springframework.boot</groupId>
++            <artifactId>spring-boot-starter-test</artifactId>
++            <scope>test</scope>
++        </dependency>
+     </dependencies>
+ 
+     <build>
+diff --git a/services/auth-svc/src/main/java/com/contoso/auth/JwtIssuer.java b/services/auth-svc/src/main/java/com/contoso/auth/JwtIssuer.java
+index 1236f5f..66b1296 100644
+--- a/services/auth-svc/src/main/java/com/contoso/auth/JwtIssuer.java
++++ b/services/auth-svc/src/main/java/com/contoso/auth/JwtIssuer.java
+@@ -5,7 +5,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
+ import org.springframework.beans.factory.annotation.Value;
+ import org.springframework.stereotype.Component;
+ 
+-import javax.annotation.PostConstruct;
++import jakarta.annotation.PostConstruct;
+ import java.security.KeyPair;
+ import java.security.KeyPairGenerator;
+ import java.security.interfaces.RSAPrivateKey;
+diff --git a/services/auth-svc/src/test/java/com/contoso/auth/AuthApplicationTests.java b/services/auth-svc/src/test/java/com/contoso/auth/AuthApplicationTests.java
+new file mode 100644
+index 0000000..30631b5
+--- /dev/null
++++ b/services/auth-svc/src/test/java/com/contoso/auth/AuthApplicationTests.java
+@@ -0,0 +1,13 @@
++package com.contoso.auth;
++
++import org.junit.jupiter.api.Test;
++import org.springframework.boot.test.context.SpringBootTest;
++
++/** Verifies the Spring application context loads (including @PostConstruct key init). */
++@SpringBootTest
++class AuthApplicationTests extends AuthTestSupport {
++
++    @Test
++    void contextLoads() {
++    }
++}
+diff --git a/services/auth-svc/src/test/java/com/contoso/auth/AuthTestSupport.java b/services/auth-svc/src/test/java/com/contoso/auth/AuthTestSupport.java
+new file mode 100644
+index 0000000..dd2909d
+--- /dev/null
++++ b/services/auth-svc/src/test/java/com/contoso/auth/AuthTestSupport.java
+@@ -0,0 +1,20 @@
++package com.contoso.auth;
++
++import org.springframework.test.context.DynamicPropertyRegistry;
++import org.springframework.test.context.DynamicPropertySource;
++
++import java.nio.file.Path;
++import java.util.UUID;
++
++/** Point each test context at an isolated temporary SQLite database. */
++abstract class AuthTestSupport {
++
++    @DynamicPropertySource
++    static void datasource(DynamicPropertyRegistry registry) {
++        Path db = Path.of(System.getProperty("java.io.tmpdir"),
++                "auth-test-" + UUID.randomUUID().toString().replace("-", "") + ".db");
++        registry.add("spring.datasource.url", () -> "jdbc:sqlite:" + db);
++        registry.add("spring.datasource.driver-class-name", () -> "org.sqlite.JDBC");
++        registry.add("spring.datasource.hikari.maximum-pool-size", () -> "1");
++    }
++}
+diff --git a/services/auth-svc/src/test/java/com/contoso/auth/TokenControllerTest.java b/services/auth-svc/src/test/java/com/contoso/auth/TokenControllerTest.java
+new file mode 100644
+index 0000000..8912fae
+--- /dev/null
++++ b/services/auth-svc/src/test/java/com/contoso/auth/TokenControllerTest.java
+@@ -0,0 +1,58 @@
++package com.contoso.auth;
++
++import org.junit.jupiter.api.Test;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.context.SpringBootTest;
++import org.springframework.boot.test.web.client.TestRestTemplate;
++import org.springframework.http.HttpStatus;
++import org.springframework.http.ResponseEntity;
++
++import java.util.List;
++import java.util.Map;
++
++import static org.assertj.core.api.Assertions.assertThat;
++
++/** Contract tests for the auth endpoints (health, token issuance, JWKS). */
++@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
++class TokenControllerTest extends AuthTestSupport {
++
++    @Autowired
++    private TestRestTemplate rest;
++
++    @Test
++    void health_returnsOk() {
++        ResponseEntity<Map> res = rest.getForEntity("/health", Map.class);
++        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
++        assertThat(res.getBody()).containsEntry("status", "ok").containsEntry("service", "auth-svc");
++    }
++
++    @Test
++    void jwks_returnsKeySet() {
++        ResponseEntity<Map> res = rest.getForEntity("/.well-known/jwks", Map.class);
++        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
++        assertThat(res.getBody()).containsKey("keys");
++        assertThat((List<?>) res.getBody().get("keys")).isNotEmpty();
++    }
++
++    @Test
++    void token_withValidCredentials_returnsAccessToken() {
++        Map<String, String> body = Map.of("username", "admin", "password", "password");
++        ResponseEntity<Map> res = rest.postForEntity("/token", body, Map.class);
++        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
++        assertThat(res.getBody()).containsKey("access_token");
++        assertThat((String) res.getBody().get("access_token")).isNotBlank();
++    }
++
++    @Test
++    void token_withBadCredentials_returns401() {
++        Map<String, String> body = Map.of("username", "admin", "password", "wrong");
++        ResponseEntity<Map> res = rest.postForEntity("/token", body, Map.class);
++        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
++    }
++
++    @Test
++    void token_withMissingFields_returns400() {
++        ResponseEntity<Map> res = rest.postForEntity("/token", Map.of("username", "admin"), Map.class);
++        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
++    }
++}

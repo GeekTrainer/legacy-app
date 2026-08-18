@@ -128,29 +128,45 @@
       "module": 5,
       "startBranch": "start-of-module-06",
       "title": "Playwright MCP registration + QA custom agent + REAL barcode feature (assets-svc + web)",
-      "status": "pending-acc-content",
+      "status": "backfilled",
       "source": "seed",
-      "provenance": { "kind": "module-runner", "note": "Copilot-generated app code; delta proposed via the module-runner seed path. When the runner emits no patch or returns BLOCKED, the change surfaces as a stale tracking issue." },
+      "provenance": { "kind": "module-runner", "note": "Copilot-generated app code (barcode/QR feature) authored via the module-runner seed path — performing ACC module 05 as a developer. Delta is now canonical; future rebuilds re-apply the stored patch." },
       "deltaDir": "deltas/module-05",
-      "patches": [],
-      "expectedTreeSha": null,
-      "expectedAssets": [".vscode/mcp.json", ".github/agents"],
-      "touchesAppCode": true,
-      "needsFromAcc": "Playwright MCP registration config, QA custom agent definition, and concrete barcode feature app code targets in services/assets-svc and services/web authored in ACC module 05."
+      "patches": [
+        "0001-feat-module-05-add-QR-barcode-support-QA-agent-resea.patch"
+      ],
+      "expectedTreeSha": "83337f347a5ee8b7d86374abbc738e89d9534e94",
+      "expectedAssets": [
+        ".github/agents/qa.agent.md",
+        "reports/qr-code-research.md",
+        "docs/plans/qr-support.md",
+        "services/assets-svc/Data/QrPayload.cs",
+        "services/assets-svc/Tests/AssetQrTests.cs",
+        "tests/playwright/qr-code.spec.ts"
+      ],
+      "touchesAppCode": true
     },
     {
       "module": 6,
       "startBranch": "start-of-module-07",
       "title": "LSP+MCP config + research report + REAL modernization app code",
-      "status": "pending-acc-content",
+      "status": "backfilled",
       "source": "seed",
-      "provenance": { "kind": "module-runner", "note": "Copilot-generated app code; delta proposed via the module-runner seed path. When the runner emits no patch or returns BLOCKED, the change surfaces as a stale tracking issue." },
+      "provenance": { "kind": "module-runner", "note": "Copilot-generated modernization (audit-svc + auth-svc: Spring Boot 2.7->3.5.3, Java 11->21, javax->jakarta) authored via the module-runner seed path — performing ACC module 06 as a developer, incl. the deterministic pom.xml/package.json edits. Delta is now canonical." },
       "deltaDir": "deltas/module-06",
-      "patches": [],
-      "expectedTreeSha": null,
-      "expectedAssets": [],
-      "touchesAppCode": true,
-      "needsFromAcc": "LSP + MCP config, research report artifact, and concrete modernization app-code targets authored in ACC module 06."
+      "patches": [
+        "0001-feat-module-06-modernize-audit-svc-auth-svc-to-Sprin.patch"
+      ],
+      "expectedTreeSha": "f4bf2d4326384507e78ac8bf20e959de9922d650",
+      "expectedAssets": [
+        ".github/lsp.json",
+        ".github/agents/java-migrator.agent.md",
+        "docs/modernization/audit-svc-plan.md",
+        "docs/modernization/migration-playbook.md",
+        "services/audit-svc/src/test/java/com/contoso/audit/AuditControllerTest.java",
+        "services/auth-svc/src/test/java/com/contoso/auth/TokenControllerTest.java"
+      ],
+      "touchesAppCode": true
     }
   ]
 }

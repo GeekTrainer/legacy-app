@@ -1,13 +1,10 @@
-# Module 05 delta — pending ACC content
+# Module 05 delta — LANDED
 
 **Produces:** `start-of-module-06` (= cumulative end state of Module 05)
 
-**Adds:** Playwright MCP registration + QA custom agent + REAL barcode feature (assets-svc + web)
+**Adds** (seed — Copilot-authored app code, performing ACC module 05):
+- Barcode/QR feature in `services/assets-svc` (.NET): `qr_payload` column + migration/backfill, `GET /assets/{id}/qr` SVG endpoint (pure-managed `Net.Codecrete.QrCodeGenerator`), tests.
+- `services/web` (Astro): `qrPayload` model field + accessible QR card on the asset detail page.
+- `.github/agents/qa.agent.md` (Quality assurance agent), `reports/qr-code-research.md`, `docs/plans/qr-support.md`, Playwright spec.
 
-**Status:** `pending-acc-content` — this module's app-state is produced by ACC's module-runner. No patches are stored yet.
-
-## What is needed to author this delta
-
-See `needsFromAcc` for module 05 in `course-build/manifest.json`. Once the module-runner proposes a delta (or the required ACC content is relayed), the ordered `*.patch` series will be committed here and `manifest.json` updated (`status` -> `backfilled`, `patches`, `expectedTreeSha`, `expectedAssets`).
-
-Until then the branch generator (`course-build/scripts/build-branches.mjs`) treats this module as empty and stops the buildable range at the last backfilled module.
+**Verified:** `build-branches.mjs --check` reproduces `expectedTreeSha` `83337f347a5ee8b7d86374abbc738e89d9534e94`. assets-svc: 28/28 tests pass; web builds. See `manifest.json` (module 5).
