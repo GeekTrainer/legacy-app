@@ -56,9 +56,9 @@ Bonus: write a fixture that spins up an isolated SQLite DB so tests don't depend
 
 ## Security
 
-### 3. Fix the SQL Injection Vulnerabilities  `[auth-svc + audit-svc, legacy Java]`
+### 3. Fix the SQL Injection Vulnerabilities  `[auth-svc + audit-svc, Java]`
 
-**Goal:** Eliminate string-concatenation SQL across the two legacy services.
+**Goal:** Eliminate string-concatenation SQL across the two Java services.
 
 Two known vulnerable methods:
 
@@ -94,22 +94,27 @@ The module uses `%` formatting, `os.path.join`, no type hints, and 2.x-flavored 
 
 Verify nothing that imports the module breaks.
 
-### 9. Upgrade Spring Boot 2.7 → 3.x  `[audit-svc, legacy Java]`
+### 9. Upgrade Spring Boot 3.5 → 4.1  `[audit-svc, Java]`
 
-**Goal:** Modernize `services/audit-svc` end-to-end.
+**Goal:** Bring `services/audit-svc` current with the latest Spring Boot.
 
-`audit-svc` runs on Spring Boot 2.7 and Java 11. Use Copilot to:
+`audit-svc` is secure but a generation behind: it runs on Spring Boot 3.5.16 and Java 17. Use Copilot to bring it current:
 
-- Bump `pom.xml` to Spring Boot 3.x and Java 17 or 21.
-- Migrate `javax.*` imports to `jakarta.*`.
-- Update its `Dockerfile` base image.
+- Bump `pom.xml` to Spring Boot 4.1 (Spring Framework 7) and Java 21.
+- Work through the Boot 3 → 4 changes, including the move to Jackson 3, and adjust code and configuration as needed.
+- Update its `Dockerfile` base image to a Java 21 runtime.
 - Run `mvn verify` and fix every failure.
 
-### 12. Upgrade the Second Legacy Service  `[auth-svc, legacy Java]`
+### 12. Upgrade the Second Java Service  `[auth-svc, Java]`
 
-**Goal:** Apply what you learned in exercise 9 to `services/auth-svc`.
+**Goal:** Apply what you learned in exercise 9 to `services/auth-svc`, with a dependency-security twist.
 
-Same shape as #9 but for the auth service. Watch out for the JJWT dependency — the API changed across major versions, and `auth-svc` exposes a public JWKS that other services rely on. Don't break the JSON shape of `GET /.well-known/jwks`.
+Same Spring Boot 3.5 → 4.1 and Java 17 → 21 jump as #9, but `auth-svc` adds a supply-chain angle. It depends on JJWT (`jjwt-api` / `jjwt-impl` / `jjwt-jackson` 0.11.x), and `jjwt-jackson` drags in a vulnerable transitive Jackson 2 — and the org rule is that no branch may ship a known-vulnerable package. Use Copilot to:
+
+- Bump `pom.xml` to Spring Boot 4.1 and Java 21.
+- Upgrade JJWT to 0.12.x and swap `jjwt-jackson` for `jjwt-gson`, so the token layer stops pulling in a vulnerable Jackson 2.
+- Watch out for the JJWT API changes across major versions, and don't break the JSON shape of the public `GET /.well-known/jwks` that other services rely on.
+- Run `mvn verify` and fix every failure.
 
 ---
 
@@ -205,7 +210,7 @@ Fix the mapping. Bonus: add a Vitest unit test that proves the mapping is correc
 | 9   | Upgrade Spring Boot                            | audit-svc                       | Modernization   |
 | 10  | New .NET endpoint                              | assets-svc, web                 | Feature         |
 | 11  | Pytest for reporting                           | reporting-svc                   | Tests           |
-| 12  | Upgrade second legacy service                  | auth-svc                        | Modernization   |
+| 12  | Upgrade second Java service                    | auth-svc                        | Modernization   |
 | 13  | Audit logging hook                             | workforce-svc, audit-svc        | Integration     |
 | 14  | Validate JWTs                                  | assets-svc, auth-svc            | Security        |
 | 15  | Cross-service Astro page                       | web, workforce-svc, assets-svc  | Feature         |
