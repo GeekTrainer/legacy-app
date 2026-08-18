@@ -2,18 +2,17 @@
   "name": "AssetTrack polyglot",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
   "features": {
-    "ghcr.io/devcontainers/features/node:1": {
+    "ghcr.io/devcontainers/features/node:2": {
       "version": "22"
     },
     "ghcr.io/devcontainers/features/dotnet:2": {
-      "version": "8.0"
+      "version": "10.0"
     },
     "ghcr.io/devcontainers/features/python:1": {
       "version": "3.12"
     },
     "ghcr.io/devcontainers/features/java:1": {
       "version": "21",
-      "additionalVersions": "11",
       "installMaven": true,
       "mavenVersion": "3.9.6"
     }
@@ -25,8 +24,8 @@
     "5002": { "label": "workforce-svc (Java 21)" },
     "5003": { "label": "reporting-svc (Python)" },
     "5004": { "label": "notifications-svc (Python)" },
-    "5005": { "label": "audit-svc (legacy Java 11)" },
-    "5006": { "label": "auth-svc (legacy Java 11)" }
+    "5005": { "label": "audit-svc (Java 17)" },
+    "5006": { "label": "auth-svc (Java 17)" }
   },
   "customizations": {
     "vscode": {
@@ -41,6 +40,6 @@
       ]
     }
   },
-  "postCreateCommand": "npm install -g @github/copilot-cli && npm install && npm run install:all || true",
+  "postCreateCommand": "npm install && npm run install:all && (npm install -g @github/copilot || true)",
   "remoteUser": "vscode"
 }

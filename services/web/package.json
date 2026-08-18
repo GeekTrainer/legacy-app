@@ -10,14 +10,19 @@
     "preview": "astro preview --host 0.0.0.0 --port 4321"
   },
   "dependencies": {
-    "astro": "^6.3.4",
-    "@astrojs/node": "^10.1.1",
-    "@astrojs/react": "^5.0.5",
+    "astro": "^7.2.2",
+    "@astrojs/node": "^11.1.2",
+    "@astrojs/react": "^6.0.2",
     "bootstrap": "^5.3.8",
     "@popperjs/core": "^2.11.8",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3"
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4"
+  },
+  "overrides": {
+    "sharp": "^0.35.0",
+    "svgo": "^4.0.2",
+    "@babel/core": "^7.29.6"
   }
 }
