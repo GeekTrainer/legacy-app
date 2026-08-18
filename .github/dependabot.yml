@@ -5,7 +5,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
     groups:
       npm-root:
         patterns:
@@ -15,7 +15,7 @@ updates:
     directory: "/services/web"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
     groups:
       web-dependencies:
         patterns:
@@ -26,7 +26,7 @@ updates:
     directory: "/services/assets-svc"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
     groups:
       assets-svc-dependencies:
         patterns:
@@ -37,7 +37,7 @@ updates:
     directory: "/services/audit-svc"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
     groups:
       audit-svc-dependencies:
         patterns:
@@ -47,7 +47,7 @@ updates:
     directory: "/services/auth-svc"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
     groups:
       auth-svc-dependencies:
         patterns:
@@ -57,7 +57,7 @@ updates:
     directory: "/services/workforce-svc"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
     groups:
       workforce-svc-dependencies:
         patterns:
@@ -68,7 +68,7 @@ updates:
     directory: "/services/notifications-svc"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
     groups:
       notifications-svc-dependencies:
         patterns:
@@ -78,7 +78,7 @@ updates:
     directory: "/services/reporting-svc"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
     groups:
       reporting-svc-dependencies:
         patterns:
@@ -96,7 +96,7 @@ updates:
       - "/services/workforce-svc"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
     groups:
       docker-base-images:
         patterns:
@@ -107,11 +107,11 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
 
   # ----- GitHub Actions (activates once workflows are added) -----
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
