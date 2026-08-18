@@ -2,7 +2,7 @@
   "name": "AssetTrack polyglot",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
   "features": {
-    "ghcr.io/devcontainers/features/node:1": {
+    "ghcr.io/devcontainers/features/node:2": {
       "version": "22"
     },
     "ghcr.io/devcontainers/features/dotnet:2": {
