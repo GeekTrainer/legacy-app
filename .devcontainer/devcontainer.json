@@ -13,7 +13,6 @@
     },
     "ghcr.io/devcontainers/features/java:1": {
       "version": "21",
-      "additionalVersions": "11",
       "installMaven": true,
       "mavenVersion": "3.9.6"
     }
@@ -25,8 +24,8 @@
     "5002": { "label": "workforce-svc (Java 21)" },
     "5003": { "label": "reporting-svc (Python)" },
     "5004": { "label": "notifications-svc (Python)" },
-    "5005": { "label": "audit-svc (legacy Java 11)" },
-    "5006": { "label": "auth-svc (legacy Java 11)" }
+    "5005": { "label": "audit-svc (Java 17)" },
+    "5006": { "label": "auth-svc (Java 17)" }
   },
   "customizations": {
     "vscode": {

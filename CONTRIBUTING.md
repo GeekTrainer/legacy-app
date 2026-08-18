@@ -61,11 +61,10 @@ docker compose up --build
 - `services/workforce-svc/` — Java 21 / Spring Boot 3; employees + assignments
 - `services/reporting-svc/` — Python 3.12 / FastAPI; reports + CSV bulk import
 - `services/notifications-svc/` — Python 3.12 / FastAPI; webhook receiver + email/Slack stub
-- `services/audit-svc/` — **legacy** Java 11 / Spring Boot 2.7; audit event log
-- `services/auth-svc/` — **legacy** Java 11 / Spring Boot 2.7; JWT issuer + user lookup
-- `scripts/` — dev helpers, including `with-java11` (runs a command against the Java 11 JDK)
+- `services/audit-svc/` — Java 17 / Spring Boot 3.5 *(a generation behind)*; audit event log
+- `services/auth-svc/` — Java 17 / Spring Boot 3.5 *(a generation behind)*; JWT issuer + user lookup
 - `exercises.md` — the course exercises; several intentional gaps in the code exist to drive these
-- `.devcontainer/` — the devcontainer definition (Node, .NET, Python, Java 21 + 11, Maven)
+- `.devcontainer/` — the devcontainer definition (Node, .NET, Python, Java 21, Maven)
 
 Each service also has its own `README.md` with native run instructions.
 
@@ -77,7 +76,7 @@ Follow the conventions of whichever service you're touching. A few stack-specifi
 - **assets-svc (.NET 10):** keep endpoints as minimal APIs; validate input on create paths.
 - **workforce-svc (Java 21):** standard Spring Boot 3 conventions.
 - **reporting-svc / notifications-svc (Python/FastAPI):** keep handlers small and typed; prefer `pydantic` models for request/response shapes.
-- **audit-svc / auth-svc (legacy Java 11):** these are intentionally dated (Spring Boot 2.7, raw JDBC). Some course exercises are *about* modernizing them, so check `exercises.md` before "fixing" something that may be a deliberate teaching gap. Always run these through `./scripts/with-java11`.
+- **audit-svc / auth-svc (Java 17 / Spring Boot 3.5, a generation behind):** these trail the team's current cadence (one Spring Boot generation back, Java 17 rather than 21). Some course exercises are *about* modernizing them, so check `exercises.md` before "fixing" something that may be a deliberate teaching gap. They build on the Java 21 JDK, targeting Java 17 bytecode.
 
 ### Running the tests
 
@@ -87,7 +86,7 @@ Run the suites for the services you changed:
 - **.NET:** `dotnet test` in `services/assets-svc`.
 - **Python:** `pytest` in `services/reporting-svc` and/or `services/notifications-svc`.
 - **Modern Java:** `mvn test` in `services/workforce-svc`.
-- **Legacy Java:** `./scripts/with-java11 mvn test` in `services/audit-svc` and/or `services/auth-svc` (they must build against Java 11).
+- **Currency-lagging Java:** `mvn test` in `services/audit-svc` and/or `services/auth-svc` (Java 17 bytecode, builds on JDK 21).
 
 All tests you touch should pass before you open a pull request.
 

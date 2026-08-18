@@ -45,7 +45,7 @@
 - [ ] .NET: `dotnet test` in `services/assets-svc` passes
 - [ ] Python: `pytest` in `services/reporting-svc` and/or `services/notifications-svc` passes
 - [ ] Modern Java: `mvn test` in `services/workforce-svc` passes
-- [ ] Legacy Java: `./scripts/with-java11 mvn test` in `services/audit-svc` and/or `services/auth-svc` passes
+- [ ] Currency-lagging Java: `mvn test` in `services/audit-svc` and/or `services/auth-svc` passes
 - [ ] Manually verified the app runs (`npm run dev` or `docker compose up --build`) and the affected flow works at http://localhost:4321
 
 ## Checklist
