@@ -18,19 +18,28 @@ It clones public ACC anonymously with `github.token` (no secret), diffs the targ
 
 ## 1. `production-branches` environment (gates promotion)
 
-`promote-branches.yml` runs in the `production-branches` environment so promotion waits on human approval before any alias/tag is pushed.
+`promote-branches.yml` runs in the `production-branches` environment so promotion waits on human approval before any alias/tag is pushed. The required reviewer is the **repo owner**.
 
 ```bash
 # Create the environment
 gh api -X PUT repos/GeekTrainer/legacy-app/environments/production-branches
 
-# TODO(owner): add required reviewers (users/teams) — identities NOT invented here.
-# gh api -X PUT repos/GeekTrainer/legacy-app/environments/production-branches \
-#   -f 'reviewers[][type]=User' -F 'reviewers[][id]=<REVIEWER_USER_ID>'
+# Add the repo owner as the required reviewer (resolves the owner's user id).
+OWNER_ID=$(gh api users/GeekTrainer --jq .id)
+gh api -X PUT repos/GeekTrainer/legacy-app/environments/production-branches \
+  -f 'reviewers[][type]=User' -F "reviewers[][id]=$OWNER_ID"
 ```
 
+> [!NOTE]
+> After migration to the `github-samples` org, replace the single-owner reviewer with the maintainers **team** (and update the owner login, which changes on transfer):
+> ```bash
+> TEAM_ID=$(gh api orgs/github-samples/teams/maintainers --jq .id)
+> gh api -X PUT repos/github-samples/legacy-app/environments/production-branches \
+>   -f 'reviewers[][type]=Team' -F "reviewers[][id]=$TEAM_ID"
+> ```
+
 > [!IMPORTANT]
-> Until at least one required reviewer is added, the environment does not actually gate anything. Adding reviewers is a **TODO(owner)** step.
+> **Leave "Prevent self-review" DISABLED (off).** In a solo/small-owner setup the same person who triggers a promotion run must be able to approve it. If "Prevent self-review" is enabled, a single owner can never approve their own promotion and the pipeline **deadlocks**. Until at least one required reviewer is added, the environment does not gate anything.
 
 ## 2. Repository variables (both optional)
 
@@ -76,7 +85,7 @@ Each module is classified in `manifest.json` as `asset`, `seed`, or `stored` (se
 ## Provisioning checklist (zero secrets)
 
 - [ ] Create `production-branches` environment
-- [ ] **TODO(owner):** add required reviewer(s) to `production-branches`
+- [ ] Add the repo owner as required reviewer (command in §1) — leave *Prevent self-review* **disabled**
 - [ ] **TODO(owner):** enable *Allow GitHub Actions to create and approve pull requests* (or accept the compare-URL fallback)
 - [ ] (optional) set `ACC_REPO` variable (else default is used)
 - [ ] (optional) set `ACC_MODULE_RUNNER_CMD` variable (else pinned default is used)
