@@ -13,7 +13,7 @@ flowchart LR
     end
 
     subgraph modern[Modern services]
-      assets[assets-svc<br/>.NET 8]
+      assets[assets-svc<br/>.NET 10]
       workforce[workforce-svc<br/>Java 21 / Spring Boot 3]
       reporting[reporting-svc<br/>Python FastAPI]
       notifications[notifications-svc<br/>Python FastAPI]
@@ -39,7 +39,7 @@ All services talk over **REST/JSON**. Each service owns its own SQLite database.
 | Service              | Stack                                  | Port  | Owns                                |
 |----------------------|----------------------------------------|-------|-------------------------------------|
 | `web`                | Astro (SSR) + React islands + Bootstrap 5 | 4321  | UI, BFF composition                 |
-| `assets-svc`         | .NET 8 (ASP.NET Core minimal APIs)     | 5001  | Asset CRUD + search                 |
+| `assets-svc`         | .NET 10 (ASP.NET Core minimal APIs)    | 5001  | Asset CRUD + search                 |
 | `workforce-svc`      | Java 21 / Spring Boot 3                | 5002  | Employees + Assignments             |
 | `reporting-svc`      | Python 3.12 / FastAPI                  | 5003  | Reports, CSV bulk import            |
 | `notifications-svc`  | Python 3.12 / FastAPI                  | 5004  | Webhook receiver, email/Slack stub  |
@@ -50,7 +50,7 @@ All services talk over **REST/JSON**. Each service owns its own SQLite database.
 
 1. Open the repository in GitHub Codespaces, or in VS Code with the Dev Containers extension.
 2. Wait for the devcontainer to finish provisioning. It installs:
-   - Node 22, .NET 8, Python 3.12, Maven, and **two Java JDKs side-by-side** (Java 21 for modern services, Java 11 for the two legacy services).
+   - Node 22, .NET 10, Python 3.12, Maven, and **two Java JDKs side-by-side** (Java 21 for modern services, Java 11 for the two legacy services).
    - `concurrently` and editable Python installs for the FastAPI services (via `postCreateCommand`).
 3. From the workspace root:
 
@@ -64,7 +64,7 @@ All services talk over **REST/JSON**. Each service owns its own SQLite database.
 
 ## Quick start (local without a devcontainer)
 
-You need Node 22, .NET 8, Python 3.12, Maven, **and both Java 21 and Java 11** on your machine. Then:
+You need Node 22, .NET 10, Python 3.12, Maven, **and both Java 21 and Java 11** on your machine. Then:
 
 ```bash
 npm install
