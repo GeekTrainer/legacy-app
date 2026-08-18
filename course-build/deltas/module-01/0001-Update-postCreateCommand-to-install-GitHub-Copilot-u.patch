@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: juliamuiruri4 <40116776+juliamuiruri4@users.noreply.github.com>
+Date: Mon, 6 Jul 2026 08:05:10 +0000
+Subject: [PATCH 1/2] Update postCreateCommand to install GitHub Copilot using
+ npm i -g @github/copilot
+
+---
+ .devcontainer/devcontainer.json | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/.devcontainer/devcontainer.json b/.devcontainer/devcontainer.json
+index ef54ecc..c5b19a8 100644
+--- a/.devcontainer/devcontainer.json
++++ b/.devcontainer/devcontainer.json
+@@ -41,6 +41,6 @@
+       ]
+     }
+   },
+-  "postCreateCommand": "npm install -g @github/copilot-cli && npm install && npm run install:all || true",
++  "postCreateCommand": "npm install -g @github/copilot && npm install && npm run install:all || true",
+   "remoteUser": "vscode"
+ }

@@ -1,0 +1,156 @@
+{
+  "$schema": "./manifest.schema.json",
+  "version": 1,
+  "description": "Canonical source of truth for building ACC learner start-of-module-N branches from deterministic per-module deltas. See course-build/REFS.md for the full ref/naming model and contract.",
+  "base": {
+    "ref": "acc-base",
+    "sha": "3689288d1f5a9ed6871db94a09c2e651bc20af3e",
+    "note": "Immutable tag pinned at pristine legacy-app app tree (origin/main HEAD, pre-course-tooling). All module deltas apply on top of this. Learner branches never contain course-build/ tooling or .github/workflows course automation."
+  },
+  "accVersionDefault": "auto-YYYY-MM",
+  "modules": [
+    {
+      "module": 1,
+      "startBranch": "start-of-module-02",
+      "title": "Docs update (ARCHITECTURE.md, README, devcontainer postCreate)",
+      "status": "backfilled",
+      "source": "stored",
+      "provenance": {
+        "kind": "solution-branch-range",
+        "fromSha": "3689288d1f5a9ed6871db94a09c2e651bc20af3e",
+        "toSha": "4785d0413052e0f67fc90569238b36ae72ee5713",
+        "sourceBranch": "02-building-ai-infra-solution",
+        "note": "Backfilled once from the -solution branch; no deterministic ACC asset glob to re-derive from. ACC content changes surface as a stale tracking issue for human authoring."
+      },
+      "deltaDir": "deltas/module-01",
+      "patches": [
+        "0001-Update-postCreateCommand-to-install-GitHub-Copilot-u.patch",
+        "0002-01-solution-Add-ARCHITECTURE.md-to-document-service-.patch"
+      ],
+      "expectedTreeSha": "6e37bcab9ddbd78bf4fcb2819298555765fb5498",
+      "expectedAssets": ["ARCHITECTURE.md"],
+      "touchesAppCode": false
+    },
+    {
+      "module": 2,
+      "startBranch": "start-of-module-03",
+      "title": "Instructions + Accessibility Expert agent + make-repo-contribution skill + copilot-instructions + a11y tweaks",
+      "status": "backfilled",
+      "source": "stored",
+      "provenance": {
+        "kind": "solution-branch-range",
+        "fromSha": "4785d0413052e0f67fc90569238b36ae72ee5713",
+        "toSha": "41329a08ecced4e449c4984fa8cafb48c086e095",
+        "sourceBranch": "02-building-ai-infra-solution",
+        "note": "Backfilled once from the -solution branch; no deterministic ACC asset glob to re-derive from. ACC content changes surface as a stale tracking issue for human authoring."
+      },
+      "deltaDir": "deltas/module-02",
+      "patches": [
+        "0001-adding-copilot-instructions.patch",
+        "0002-add-custom-Accessibility-Expert-agent-configuration.patch",
+        "0003-add-make-contribution-skill-for-contribution-guideli.patch",
+        "0004-implemented-minor-accessibility-improvements-with-th.patch"
+      ],
+      "expectedTreeSha": "17feab3963ea97b423fb3add8c0d377382fe646b",
+      "expectedAssets": [
+        ".github/copilot-instructions.md",
+        ".github/agents/accessibility-expert.agent.md",
+        ".github/skills/make-repo-contribution/SKILL.md",
+        ".github/instructions/astro-frontend.instructions.md",
+        ".github/instructions/dotnet.instructions.md",
+        ".github/instructions/java.instructions.md",
+        ".github/instructions/python.instructions.md"
+      ],
+      "deprecates": {
+        "branch": "02-building-ai-infra-solution",
+        "note": "Same end state as end-of-M02. Frozen alias kept with deprecation notice; new canonical branch is start-of-module-03."
+      },
+      "touchesAppCode": true
+    },
+    {
+      "module": 3,
+      "startBranch": "start-of-module-04",
+      "title": "Playwright test foundation + delegation brief + test backfill",
+      "status": "backfilled",
+      "source": "stored",
+      "provenance": {
+        "kind": "solution-branch-range",
+        "fromSha": "41329a08ecced4e449c4984fa8cafb48c086e095",
+        "toSha": "4f763738775270bc8e66a66b0465726002363226",
+        "sourceBranch": "03-test-suite-remote-delegation-solution",
+        "note": "Backfilled once from the -solution branch; no deterministic ACC asset glob to re-derive from. ACC content changes surface as a stale tracking issue for human authoring."
+      },
+      "deltaDir": "deltas/module-03",
+      "patches": [
+        "0001-test-add-Playwright-accessibility-foundation.patch",
+        "0002-fix-associate-form-labels-to-close-accessibility-gap.patch",
+        "0003-docs-add-test-backfill-delegation-brief.patch",
+        "0004-test-add-test-suite-backfill.patch"
+      ],
+      "expectedTreeSha": "0690ccec6ddac59289f1b1afa0ee7cbcda7d5f9e",
+      "expectedAssets": [
+        "playwright.config.ts",
+        "tests/playwright/smoke.spec.ts",
+        "tests/playwright/accessibility.spec.ts",
+        "docs/delegations/test-backfill.md",
+        "services/assets-svc/Tests/AssetEndpointsTests.cs"
+      ],
+      "deprecates": {
+        "branch": "03-test-suite-remote-delegation-solution",
+        "note": "Same end state as end-of-M03. Frozen alias kept with deprecation notice; new canonical branch is start-of-module-04."
+      },
+      "touchesAppCode": true
+    },
+    {
+      "module": 4,
+      "startBranch": "start-of-module-05",
+      "title": ".github/hooks lifecycle hooks (postToolUse + agentStop test-router)",
+      "status": "backfilled",
+      "source": "asset",
+      "assetRoot": "assets/04",
+      "provenance": {
+        "kind": "acc-assets",
+        "assetRoot": "assets/04",
+        "note": "Deterministic: the produced state is exactly the checked-in ACC assets under assets/04/** (path stripped of the assetRoot prefix), copied with their ACC blob modes. Re-derived with NO AI by rederive-asset-module.mjs. Currently adds .github/hooks/scripts/test-router.sh (0755) and .github/hooks/hooks.json (0644)."
+      },
+      "deltaDir": "deltas/module-04",
+      "patches": [
+        "0001-feat-hooks-add-lifecycle-test-router-hook-hooks.json.patch"
+      ],
+      "expectedTreeSha": "9bb1cb347bb20bce703a9bd9fc1aefba7113f936",
+      "expectedAssets": [
+        ".github/hooks/hooks.json",
+        ".github/hooks/scripts/test-router.sh"
+      ],
+      "touchesAppCode": false
+    },
+    {
+      "module": 5,
+      "startBranch": "start-of-module-06",
+      "title": "Playwright MCP registration + QA custom agent + REAL barcode feature (assets-svc + web)",
+      "status": "pending-acc-content",
+      "source": "seed",
+      "provenance": { "kind": "module-runner", "note": "Copilot-generated app code; delta proposed via the module-runner seed path. When the runner emits no patch or returns BLOCKED, the change surfaces as a stale tracking issue." },
+      "deltaDir": "deltas/module-05",
+      "patches": [],
+      "expectedTreeSha": null,
+      "expectedAssets": [".vscode/mcp.json", ".github/agents"],
+      "touchesAppCode": true,
+      "needsFromAcc": "Playwright MCP registration config, QA custom agent definition, and concrete barcode feature app code targets in services/assets-svc and services/web authored in ACC module 05."
+    },
+    {
+      "module": 6,
+      "startBranch": "start-of-module-07",
+      "title": "LSP+MCP config + research report + REAL modernization app code",
+      "status": "pending-acc-content",
+      "source": "seed",
+      "provenance": { "kind": "module-runner", "note": "Copilot-generated app code; delta proposed via the module-runner seed path. When the runner emits no patch or returns BLOCKED, the change surfaces as a stale tracking issue." },
+      "deltaDir": "deltas/module-06",
+      "patches": [],
+      "expectedTreeSha": null,
+      "expectedAssets": [],
+      "touchesAppCode": true,
+      "needsFromAcc": "LSP + MCP config, research report artifact, and concrete modernization app-code targets authored in ACC module 06."
+    }
+  ]
+}
