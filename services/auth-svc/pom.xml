@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.7.18</version>
+        <version>3.5.16</version>
         <relativePath/>
     </parent>
 
@@ -13,10 +13,13 @@
     <artifactId>auth-svc</artifactId>
     <version>0.1.0</version>
     <name>auth-svc</name>
-    <description>JWT issuer + user lookup (intentionally legacy: Spring Boot 2.7 / Java 11)</description>
+    <description>JWT issuer + user lookup (a generation behind: Spring Boot 3.5 / Java 17, due for a currency upgrade)</description>
 
     <properties>
-        <java.version>11</java.version>
+        <java.version>17</java.version>
+        <!-- Currency pins: hold the BOM-managed Jackson 2.x and Log4j2 API on CVE-clean patches -->
+        <jackson-bom.version>2.22.2</jackson-bom.version>
+        <log4j2.version>2.25.5</log4j2.version>
     </properties>
 
     <dependencies>

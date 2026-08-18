@@ -13,15 +13,15 @@ flowchart LR
     end
 
     subgraph modern[Modern services]
-      assets[assets-svc<br/>.NET 8]
+      assets[assets-svc<br/>.NET 10]
       workforce[workforce-svc<br/>Java 21 / Spring Boot 3]
       reporting[reporting-svc<br/>Python FastAPI]
       notifications[notifications-svc<br/>Python FastAPI]
     end
 
-    subgraph legacy[Legacy services - intentionally dated]
-      audit[audit-svc<br/>Java 11 / Spring Boot 2.7]
-      auth[auth-svc<br/>Java 11 / Spring Boot 2.7]
+    subgraph behind[Services a generation behind - due for a currency upgrade]
+      audit[audit-svc<br/>Java 17 / Spring Boot 3.5]
+      auth[auth-svc<br/>Java 17 / Spring Boot 3.5]
     end
 
     web --> assets
@@ -39,18 +39,18 @@ All services talk over **REST/JSON**. Each service owns its own SQLite database.
 | Service              | Stack                                  | Port  | Owns                                |
 |----------------------|----------------------------------------|-------|-------------------------------------|
 | `web`                | Astro (SSR) + React islands + Bootstrap 5 | 4321  | UI, BFF composition                 |
-| `assets-svc`         | .NET 8 (ASP.NET Core minimal APIs)     | 5001  | Asset CRUD + search                 |
+| `assets-svc`         | .NET 10 (ASP.NET Core minimal APIs)    | 5001  | Asset CRUD + search                 |
 | `workforce-svc`      | Java 21 / Spring Boot 3                | 5002  | Employees + Assignments             |
 | `reporting-svc`      | Python 3.12 / FastAPI                  | 5003  | Reports, CSV bulk import            |
 | `notifications-svc`  | Python 3.12 / FastAPI                  | 5004  | Webhook receiver, email/Slack stub  |
-| `audit-svc`          | Java 11 / Spring Boot 2.7 *(legacy)*   | 5005  | Audit event log                     |
-| `auth-svc`           | Java 11 / Spring Boot 2.7 *(legacy)*   | 5006  | JWT issuer, user lookup             |
+| `audit-svc`          | Java 17 / Spring Boot 3.5 *(a generation behind)* | 5005  | Audit event log                     |
+| `auth-svc`           | Java 17 / Spring Boot 3.5 *(a generation behind)* | 5006  | JWT issuer, user lookup             |
 
 ## Quick start (Codespaces or local devcontainer)
 
 1. Open the repository in GitHub Codespaces, or in VS Code with the Dev Containers extension.
 2. Wait for the devcontainer to finish provisioning. It installs:
-   - Node 22, .NET 8, Python 3.12, Maven, and **two Java JDKs side-by-side** (Java 21 for modern services, Java 11 for the two legacy services).
+   - Node 22, .NET 10, Python 3.12, Maven, and **Java 21** (the JDK for all three JVM services; the two currency-lagging services target Java 17 bytecode and build fine on JDK 21).
    - `concurrently` and editable Python installs for the FastAPI services (via `postCreateCommand`).
 3. From the workspace root:
 
@@ -64,7 +64,7 @@ All services talk over **REST/JSON**. Each service owns its own SQLite database.
 
 ## Quick start (local without a devcontainer)
 
-You need Node 22, .NET 8, Python 3.12, Maven, **and both Java 21 and Java 11** on your machine. Then:
+You need Node 22, .NET 10, Python 3.12, Maven, **and Java 21** on your machine. Then:
 
 ```bash
 npm install
@@ -115,3 +115,23 @@ See [`exercises.md`](exercises.md) for the full exercise list.
 ## Course exercises
 
 See [`exercises.md`](exercises.md). Each exercise is **atomic** — completing one is not a prerequisite for another. Exercises cover all five stacks (Astro, .NET, modern Java, Python, legacy Java) so learners can pick what's most useful to them.
+
+## License
+
+This project is licensed under the terms of the MIT license. See [LICENSE](LICENSE) for the full text.
+
+## Contributing
+
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for how to set up the polyglot devcontainer, run the tests, and open a pull request.
+
+## Code of Conduct
+
+This project has adopted a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold it.
+
+## Support
+
+Looking for help? See [SUPPORT.md](SUPPORT.md) for how to file issues and get assistance.
+
+## Security
+
+To report a security vulnerability, please follow the process described in [SECURITY.md](SECURITY.md). Please do not report security issues through public GitHub issues.
