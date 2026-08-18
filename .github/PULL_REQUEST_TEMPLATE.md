@@ -23,7 +23,7 @@
 <!-- Check the services/areas this PR touches -->
 
 - [ ] `web` (Astro SSR + React)
-- [ ] `assets-svc` (.NET 8)
+- [ ] `assets-svc` (.NET 10)
 - [ ] `workforce-svc` (Java 21 / Spring Boot 3)
 - [ ] `reporting-svc` (Python FastAPI)
 - [ ] `notifications-svc` (Python FastAPI)

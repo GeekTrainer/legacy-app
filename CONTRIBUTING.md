@@ -17,12 +17,12 @@ Please note that this project is released with a [Contributor Code of Conduct][c
 AssetTrack is a polyglot stack, so the fastest and most reliable way to work on it is inside the provided **devcontainer** — either in [GitHub Codespaces](https://github.com/features/codespaces) or locally with the [VS Code Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers). The devcontainer provisions everything you need:
 
 - **Node.js 22** — the `web` frontend and the root dev orchestrator
-- **.NET 8** — `assets-svc`
+- **.NET 10** — `assets-svc`
 - **Python 3.12** — `reporting-svc` and `notifications-svc`
 - **Java 21 and Java 11 side-by-side** — Java 21 for `workforce-svc`; Java 11 for the two legacy services (`audit-svc`, `auth-svc`)
 - **Maven** — build/test for all three Java services
 
-If you prefer to work without the devcontainer, you'll need all of the above installed natively (Node 22, .NET 8, Python 3.12, Maven, **and both Java 21 and Java 11**). Using the devcontainer is strongly recommended so your toolchain matches CI and the course.
+If you prefer to work without the devcontainer, you'll need all of the above installed natively (Node 22, .NET 10, Python 3.12, Maven, **and both Java 21 and Java 11**). Using the devcontainer is strongly recommended so your toolchain matches CI and the course.
 
 ### Setting Up Your Development Environment
 
@@ -57,7 +57,7 @@ docker compose up --build
 ## Project Structure
 
 - `services/web/` — Astro SSR frontend with React islands (Bootstrap 5); also composes the backend calls (BFF)
-- `services/assets-svc/` — .NET 8 (ASP.NET Core minimal APIs); asset CRUD + search
+- `services/assets-svc/` — .NET 10 (ASP.NET Core minimal APIs); asset CRUD + search
 - `services/workforce-svc/` — Java 21 / Spring Boot 3; employees + assignments
 - `services/reporting-svc/` — Python 3.12 / FastAPI; reports + CSV bulk import
 - `services/notifications-svc/` — Python 3.12 / FastAPI; webhook receiver + email/Slack stub
@@ -74,7 +74,7 @@ Each service also has its own `README.md` with native run instructions.
 Follow the conventions of whichever service you're touching. A few stack-specific notes:
 
 - **web (Astro/React):** build UI as `.astro` pages/components with React islands where interactivity is needed; use Bootstrap 5 utility classes. Add `data-testid` attributes to interactive elements so the Playwright tests can target them.
-- **assets-svc (.NET 8):** keep endpoints as minimal APIs; validate input on create paths.
+- **assets-svc (.NET 10):** keep endpoints as minimal APIs; validate input on create paths.
 - **workforce-svc (Java 21):** standard Spring Boot 3 conventions.
 - **reporting-svc / notifications-svc (Python/FastAPI):** keep handlers small and typed; prefer `pydantic` models for request/response shapes.
 - **audit-svc / auth-svc (legacy Java 11):** these are intentionally dated (Spring Boot 2.7, raw JDBC). Some course exercises are *about* modernizing them, so check `exercises.md` before "fixing" something that may be a deliberate teaching gap. Always run these through `./scripts/with-java11`.

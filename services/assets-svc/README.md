@@ -1,10 +1,10 @@
-# assets-svc (.NET 8)
+# assets-svc (.NET 10)
 
 Owns the **Asset** domain: hardware items tracked by Contoso Industries.
 
 ## Stack
 
-- .NET 8, ASP.NET Core minimal APIs
+- .NET 10, ASP.NET Core minimal APIs
 - Dapper over SQLite
 - Swagger UI at `/swagger`
 

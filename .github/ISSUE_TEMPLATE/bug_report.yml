@@ -20,7 +20,7 @@ body:
       description: Which service or area of the polyglot stack is affected?
       options:
         - web (Astro SSR + React)
-        - assets-svc (.NET 8)
+        - assets-svc (.NET 10)
         - workforce-svc (Java 21 / Spring Boot 3)
         - reporting-svc (Python FastAPI)
         - notifications-svc (Python FastAPI)
@@ -73,6 +73,6 @@ body:
         - OS: [e.g. macOS 15, Ubuntu 22.04, Windows 11]
         - Browser (for web issues): [e.g. Chrome 130, Safari 18]
         - Node.js: [e.g. 22.x]
-        - .NET / Java / Python versions (if relevant): [e.g. .NET 8, Java 21 + Java 11, Python 3.12]
+        - .NET / Java / Python versions (if relevant): [e.g. .NET 10, Java 21 + Java 11, Python 3.12]
     validations:
       required: true
