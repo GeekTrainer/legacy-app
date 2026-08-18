@@ -30,7 +30,7 @@ The state-changing chain is `base -> M01 -> M02 -> ... -> M07`. `M00` is the pri
 Three layers, from most to least durable:
 
 1. **Base (immutable tag) — `acc-base`**
-   Pinned at the pristine, tooling-free `legacy-app` app tree updated to the current main app state (.NET 10 assets-svc + Spring Boot 3.5.16 / Java 17 Java services): `510b4ffa1b1f95234ec6c7bd1d0983060e5081c3`. Every module delta applies on top of this. Learner branches contain the app + module content only — never `course-build/` or the course automation workflows. The tag **moves** only via an approved promotion: when a regen PR that advances `manifest.base.sha` is merged, the `acc-base` tag is re-pointed to the new base commit as part of the gated promotion.
+   Pinned at the pristine, tooling-free `legacy-app` app tree updated to the current main app state (.NET 10 assets-svc + Spring Boot 3.5.16 / Java 17 Java services): `ab05db6007679f6e122c004d620e4e293bd9d729`. Every module delta applies on top of this. Learner branches contain the app + module content only — never `course-build/` or the course automation workflows. The tag **moves** only via an approved promotion: when a regen PR that advances `manifest.base.sha` is merged, the `acc-base` tag is re-pointed to the new base commit as part of the gated promotion.
 
 2. **Mutable convenience branches — `start-of-module-N`**
    The learner-facing `git checkout` targets. They **move** (only via an approved, all-or-nothing promotion). `N` runs `02..07`.

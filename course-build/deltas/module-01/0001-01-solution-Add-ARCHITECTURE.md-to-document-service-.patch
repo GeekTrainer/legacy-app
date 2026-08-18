@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: juliamuiruri4 <40116776+juliamuiruri4@users.noreply.github.com>
 Date: Mon, 6 Jul 2026 08:16:22 +0000
-Subject: [PATCH 2/2] 01-solution-Add ARCHITECTURE.md to document service
+Subject: [PATCH] 01-solution-Add ARCHITECTURE.md to document service
  architecture and filled in gaps in README
 
 ---

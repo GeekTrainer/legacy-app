@@ -9,4 +9,4 @@
 
 **Note:** the previous `javax.annotation.PostConstruct` → `jakarta` rename and the `package.json` `with-java11` shim removal are no longer part of this delta — both are pre-done on the re-baselined base (the secure Boot 3.5.16 / Java 17 "before" already runs on Jakarta and a single JDK 21).
 
-**Verified:** `build-branches.mjs --check` reproduces `expectedTreeSha` `6de6b9b871d27b02d051f31ea1fb9ecc1c895bb2`. audit-svc: 3/3, auth-svc: 4/4 `mvn verify` on Boot 4.1.0 / Java 21; resolved trees OSV-clean. See `manifest.json` (module 6).
+**Verified:** `build-branches.mjs --check` reproduces `expectedTreeSha` `54a47a032fe12e6f9496040d93c6ed123c28f8b3`. audit-svc: 3/3, auth-svc: 4/4 `mvn verify` on Boot 4.1.0 / Java 21; resolved trees OSV-clean. See `manifest.json` (module 6).
