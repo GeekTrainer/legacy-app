@@ -4,8 +4,8 @@
   "description": "Canonical source of truth for building ACC learner start-of-module-N branches from deterministic per-module deltas. See course-build/REFS.md for the full ref/naming model and contract.",
   "base": {
     "ref": "acc-base",
-    "sha": "3689288d1f5a9ed6871db94a09c2e651bc20af3e",
-    "note": "Immutable tag pinned at pristine legacy-app app tree (origin/main HEAD, pre-course-tooling). All module deltas apply on top of this. Learner branches never contain course-build/ tooling or .github/workflows course automation."
+    "sha": "510b4ffa1b1f95234ec6c7bd1d0983060e5081c3",
+    "note": "Immutable tag pinned at the pristine, tooling-free legacy-app app tree updated to the current main app state (.NET 10 assets-svc + Spring Boot 3.5.16 / Java 17 Java services). All module deltas apply on top of this. Learner branches never contain course-build/ tooling or .github/workflows course automation. On promotion the acc-base tag is moved to this commit (see course-build/REFS.md)."
   },
   "accVersionDefault": "auto-YYYY-MM",
   "modules": [
@@ -27,7 +27,7 @@
         "0001-Update-postCreateCommand-to-install-GitHub-Copilot-u.patch",
         "0002-01-solution-Add-ARCHITECTURE.md-to-document-service-.patch"
       ],
-      "expectedTreeSha": "6e37bcab9ddbd78bf4fcb2819298555765fb5498",
+      "expectedTreeSha": "e23092983499b518165efc85fe51d829ea256ea8",
       "expectedAssets": ["ARCHITECTURE.md"],
       "touchesAppCode": false
     },
@@ -51,7 +51,7 @@
         "0003-add-make-contribution-skill-for-contribution-guideli.patch",
         "0004-implemented-minor-accessibility-improvements-with-th.patch"
       ],
-      "expectedTreeSha": "17feab3963ea97b423fb3add8c0d377382fe646b",
+      "expectedTreeSha": "6058c846473986f2fc534b304c7cc7bbd4c98c08",
       "expectedAssets": [
         ".github/copilot-instructions.md",
         ".github/agents/accessibility-expert.agent.md",
@@ -87,7 +87,7 @@
         "0003-docs-add-test-backfill-delegation-brief.patch",
         "0004-test-add-test-suite-backfill.patch"
       ],
-      "expectedTreeSha": "0690ccec6ddac59289f1b1afa0ee7cbcda7d5f9e",
+      "expectedTreeSha": "76b69b5ea5724d35909acd25b331e893be8443cb",
       "expectedAssets": [
         "playwright.config.ts",
         "tests/playwright/smoke.spec.ts",
@@ -117,7 +117,7 @@
       "patches": [
         "0001-feat-hooks-add-lifecycle-test-router-hook-hooks.json.patch"
       ],
-      "expectedTreeSha": "9bb1cb347bb20bce703a9bd9fc1aefba7113f936",
+      "expectedTreeSha": "6f33a42da97e6221ab787caf7a7b6160cec4677e",
       "expectedAssets": [
         ".github/hooks/hooks.json",
         ".github/hooks/scripts/test-router.sh"
@@ -135,7 +135,7 @@
       "patches": [
         "0001-feat-module-05-add-QR-barcode-support-QA-agent-resea.patch"
       ],
-      "expectedTreeSha": "83337f347a5ee8b7d86374abbc738e89d9534e94",
+      "expectedTreeSha": "a18e9dca075fa69040c9a15195dbcd0e6cf98cb0",
       "expectedAssets": [
         ".github/agents/qa.agent.md",
         "reports/qr-code-research.md",
@@ -149,15 +149,15 @@
     {
       "module": 6,
       "startBranch": "start-of-module-07",
-      "title": "LSP+MCP config + research report + REAL modernization app code",
+      "title": "LSP+MCP config + research report + REAL secure modernization app code (Boot 4.1 / Java 21)",
       "status": "backfilled",
       "source": "seed",
-      "provenance": { "kind": "module-runner", "note": "Copilot-generated modernization (audit-svc + auth-svc: Spring Boot 2.7->3.5.3, Java 11->21, javax->jakarta) authored via the module-runner seed path — performing ACC module 06 as a developer, incl. the deterministic pom.xml/package.json edits. Delta is now canonical." },
+      "provenance": { "kind": "module-runner", "note": "Copilot-generated secure modernization (audit-svc + auth-svc: Spring Boot 3.5.16->4.1.0, Java 17->21, Jackson 3 default + jackson-bom/log4j2 currency pins, auth-svc jjwt 0.11.5->0.12.7 with jjwt-jackson->jjwt-gson) authored via the module-runner seed path — performing ACC module 06 as a developer. Re-authored on the re-baselined tooling-free base C. Delta is now canonical." },
       "deltaDir": "deltas/module-06",
       "patches": [
         "0001-feat-module-06-modernize-audit-svc-auth-svc-to-Sprin.patch"
       ],
-      "expectedTreeSha": "f4bf2d4326384507e78ac8bf20e959de9922d650",
+      "expectedTreeSha": "6de6b9b871d27b02d051f31ea1fb9ecc1c895bb2",
       "expectedAssets": [
         ".github/lsp.json",
         ".github/agents/java-migrator.agent.md",

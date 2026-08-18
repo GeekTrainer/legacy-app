@@ -69,10 +69,10 @@ if [ -d services/assets-svc ]; then
   fi
 fi
 
-echo "==> Java services build (workforce = Java 21; audit/auth = Java 11)"
+echo "==> Java services build (all on Java 21; audit/auth target Java 17 bytecode before module 06, Java 21 after)"
 [ -f services/workforce-svc/pom.xml ] && ( cd services/workforce-svc && mvn -q -B -DskipTests=false test )
-[ -f services/audit-svc/pom.xml ]     && ( cd services/audit-svc && ../../scripts/with-java11 mvn -q -B -DskipTests=false test )
-[ -f services/auth-svc/pom.xml ]      && ( cd services/auth-svc && ../../scripts/with-java11 mvn -q -B -DskipTests=false test )
+[ -f services/audit-svc/pom.xml ]     && ( cd services/audit-svc && mvn -q -B -DskipTests=false test )
+[ -f services/auth-svc/pom.xml ]      && ( cd services/auth-svc && mvn -q -B -DskipTests=false test )
 
 echo "==> Python services install + pytest"
 for svc in reporting-svc notifications-svc; do

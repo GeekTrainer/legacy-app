@@ -6,8 +6,8 @@ Subject: [PATCH 2/2] 01-solution-Add ARCHITECTURE.md to document service
 
 ---
  ARCHITECTURE.md | 95 +++++++++++++++++++++++++++++++++++++++++++++++++
- README.md       | 12 ++++---
- 2 files changed, 102 insertions(+), 5 deletions(-)
+ README.md       |  8 +++--
+ 2 files changed, 100 insertions(+), 3 deletions(-)
  create mode 100644 ARCHITECTURE.md
 
 diff --git a/ARCHITECTURE.md b/ARCHITECTURE.md
@@ -112,19 +112,10 @@ index 0000000..eec8bab
 +- **Tech debt:** SQL injection in username lookup; plain-text seeded passwords; no tests; legacy Spring Boot 2.7 / Java 11
 +- **Unenforced rules:** authentication data is intentionally insecure for course material
 diff --git a/README.md b/README.md
-index 22351d8..886803d 100644
+index f5aa1d2..8d32df3 100644
 --- a/README.md
 +++ b/README.md
-@@ -9,7 +9,7 @@ flowchart LR
-     browser([Browser]) --> web
- 
-     subgraph frontend
--      web[web<br/>Astro SSR + React islands]
-+      web[web<br/>Astro SSR + Bootstrap 5]
-     end
- 
-     subgraph modern[Modern services]
-@@ -34,11 +34,11 @@ flowchart LR
+@@ -34,7 +34,7 @@ flowchart LR
      workforce -.JWKs.-> auth
  ```
  
@@ -133,11 +124,6 @@ index 22351d8..886803d 100644
  
  | Service              | Stack                                  | Port  | Owns                                |
  |----------------------|----------------------------------------|-------|-------------------------------------|
--| `web`                | Astro (SSR) + React islands + Bootstrap 5 | 4321  | UI, BFF composition                 |
-+| `web`                | Astro (SSR) + Bootstrap 5             | 4321  | UI, BFF composition                 |
- | `assets-svc`         | .NET 8 (ASP.NET Core minimal APIs)     | 5001  | Asset CRUD + search                 |
- | `workforce-svc`      | Java 21 / Spring Boot 3                | 5002  | Employees + Assignments             |
- | `reporting-svc`      | Python 3.12 / FastAPI                  | 5003  | Reports, CSV bulk import            |
 @@ -82,9 +82,11 @@ docker compose up --build
  
  Open http://localhost:4321.

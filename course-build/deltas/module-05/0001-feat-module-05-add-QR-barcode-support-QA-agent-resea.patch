@@ -1,8 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: acc-course-bot <acc-course-bot@users.noreply.github.com>
 Date: Wed, 1 Jan 2020 00:00:00 +0000
-Subject: [PATCH 1/1] feat(module-05): add QR/barcode support + QA agent,
- research, plan
+Subject: [PATCH] feat(module-05): add QR/barcode support + QA agent, research,
+ plan
 
 Module 5 seed: Playwright MCP-backed Quality assurance agent, /research report, /plan, and the barcode/QR feature across assets-svc (.NET) and web (Astro) with tests.
 ---
@@ -157,15 +157,15 @@ index 0000000..64d3870
 +> [!NOTE]
 +> This report is evidence for the decision, not the decision itself. If a reviewer prefers a different option that still satisfies the pure-managed + SVG + permissive-license constraints, the integration sketch is the only part that changes.
 diff --git a/services/assets-svc/AssetsService.csproj b/services/assets-svc/AssetsService.csproj
-index adeaf54..db736a3 100644
+index 8a74b57..40c8bcd 100644
 --- a/services/assets-svc/AssetsService.csproj
 +++ b/services/assets-svc/AssetsService.csproj
 @@ -9,6 +9,7 @@
    <ItemGroup>
-     <PackageReference Include="Dapper" Version="2.1.35" />
-     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.4" />
+     <PackageReference Include="Dapper" Version="2.1.79" />
+     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
 +    <PackageReference Include="Net.Codecrete.QrCodeGenerator" Version="2.0.5" />
-     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
    </ItemGroup>
    <ItemGroup>
 diff --git a/services/assets-svc/Data/AssetsDb.cs b/services/assets-svc/Data/AssetsDb.cs

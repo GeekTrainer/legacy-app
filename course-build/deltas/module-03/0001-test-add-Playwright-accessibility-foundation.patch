@@ -37,7 +37,7 @@ index 3797129..b13f322 100644
 +playwright-report/
 +playwright/.cache/
 diff --git a/package-lock.json b/package-lock.json
-index 3001b53..6a0f4fd 100644
+index e86c5d4..1e1ce81 100644
 --- a/package-lock.json
 +++ b/package-lock.json
 @@ -6,9 +6,26 @@
@@ -45,29 +45,29 @@ index 3001b53..6a0f4fd 100644
        "name": "assettrack-dev",
        "devDependencies": {
 +        "@playwright/test": "^1.49.1",
-         "concurrently": "^9.1.0"
+         "concurrently": "^10.0.5"
        }
      },
 +    "node_modules/@playwright/test": {
-+      "version": "1.61.1",
-+      "resolved": "https://registry.npmjs.org/@playwright/test/-/test-1.61.1.tgz",
-+      "integrity": "sha512-8nKv6+0RJSL9FE4jYOEGXnPeM/Hg12qZpmqzZjRh3qM0Y7c3z1mrOTfFLids72RDQYVh9WpLEfR5WdpNX4fkig==",
++      "version": "1.62.1",
++      "resolved": "https://registry.npmjs.org/@playwright/test/-/test-1.62.1.tgz",
++      "integrity": "sha512-DTcUc8qii+cpHvtOwggMtBRMjKZHXYWdw8syRYu2vtzuq4Wxphqq4NfCs5Zt44L6mA8rfDfj+PHnxFc/FeK6mQ==",
 +      "dev": true,
 +      "license": "Apache-2.0",
 +      "dependencies": {
-+        "playwright": "1.61.1"
++        "playwright": "1.62.1"
 +      },
 +      "bin": {
 +        "playwright": "cli.js"
 +      },
 +      "engines": {
-+        "node": ">=18"
++        "node": ">=20"
 +      }
 +    },
      "node_modules/ansi-regex": {
-       "version": "5.0.1",
-       "resolved": "https://registry.npmjs.org/ansi-regex/-/ansi-regex-5.0.1.tgz",
-@@ -142,6 +159,21 @@
+       "version": "6.3.0",
+       "resolved": "https://registry.npmjs.org/ansi-regex/-/ansi-regex-6.3.0.tgz",
+@@ -105,6 +122,21 @@
          "node": ">=6"
        }
      },
@@ -89,51 +89,51 @@ index 3001b53..6a0f4fd 100644
      "node_modules/get-caller-file": {
        "version": "2.0.5",
        "resolved": "https://registry.npmjs.org/get-caller-file/-/get-caller-file-2.0.5.tgz",
-@@ -172,6 +204,38 @@
-         "node": ">=8"
+@@ -128,6 +160,38 @@
+         "url": "https://github.com/sponsors/sindresorhus"
        }
      },
 +    "node_modules/playwright": {
-+      "version": "1.61.1",
-+      "resolved": "https://registry.npmjs.org/playwright/-/playwright-1.61.1.tgz",
-+      "integrity": "sha512-DWnY5o3YbLWK4GovuAVwpqL+1VwGNdUGrRr++8j8PtQQzvAVZUIMjKQ90fY689sEJZJBbZVw1rXaOKSTitkzPQ==",
++      "version": "1.62.1",
++      "resolved": "https://registry.npmjs.org/playwright/-/playwright-1.62.1.tgz",
++      "integrity": "sha512-0M+L3LAD8/nm554LOla9Ayx0j0tmFZ0FBcoQ7F1VuVHpM/XpiC8RcDzBQB8W5+hA8L22THxELzeF+2WcUzvcLg==",
 +      "dev": true,
 +      "license": "Apache-2.0",
 +      "dependencies": {
-+        "playwright-core": "1.61.1"
++        "playwright-core": "1.62.1"
 +      },
 +      "bin": {
 +        "playwright": "cli.js"
 +      },
 +      "engines": {
-+        "node": ">=18"
++        "node": ">=20"
 +      },
 +      "optionalDependencies": {
 +        "fsevents": "2.3.2"
 +      }
 +    },
 +    "node_modules/playwright-core": {
-+      "version": "1.61.1",
-+      "resolved": "https://registry.npmjs.org/playwright-core/-/playwright-core-1.61.1.tgz",
-+      "integrity": "sha512-h7Qlt6m4REp25qvIdvbDtVmD4LqVXfpRxhORv9L0jzETM05p4fuPJ3dKyuSXQxDSbXnmS79HAgi9589lGSpLkg==",
++      "version": "1.62.1",
++      "resolved": "https://registry.npmjs.org/playwright-core/-/playwright-core-1.62.1.tgz",
++      "integrity": "sha512-wPYSwEBJY9GHraISXqyqtx0na0LpO3XEX7jNDhntbex7tzUS7kLnZsOlFruFJB4Hi/rhDMjXGqHewDZ68nYZVw==",
 +      "dev": true,
 +      "license": "Apache-2.0",
 +      "bin": {
 +        "playwright-core": "cli.js"
 +      },
 +      "engines": {
-+        "node": ">=18"
++        "node": ">=20"
 +      }
 +    },
-     "node_modules/require-directory": {
-       "version": "2.1.1",
-       "resolved": "https://registry.npmjs.org/require-directory/-/require-directory-2.1.1.tgz",
+     "node_modules/rxjs": {
+       "version": "7.8.2",
+       "resolved": "https://registry.npmjs.org/rxjs/-/rxjs-7.8.2.tgz",
 diff --git a/package.json b/package.json
-index 0baf6c1..abf18f1 100644
+index f677727..e86fcc5 100644
 --- a/package.json
 +++ b/package.json
 @@ -12,9 +12,12 @@
-     "dev:auth": "cd services/auth-svc && mkdir -p data && SERVER_PORT=5006 AUTH_DB_PATH=$PWD/data/auth.db LOGGING_LEVEL_ROOT=${LOG_LEVEL_JAVA:-WARN} ../../scripts/with-java11 mvn -q spring-boot:run",
+     "dev:auth": "cd services/auth-svc && mkdir -p data && SERVER_PORT=5006 AUTH_DB_PATH=$PWD/data/auth.db LOGGING_LEVEL_ROOT=${LOG_LEVEL_JAVA:-WARN} mvn -q spring-boot:run",
      "dev": "node scripts/dev-banner.mjs && concurrently --names web,assets,workforce,reporting,notif,audit,auth --prefix-colors auto --kill-others-on-fail npm:dev:web npm:dev:assets npm:dev:workforce npm:dev:reporting npm:dev:notifications npm:dev:audit npm:dev:auth",
      "dev:verbose": "LOG_LEVEL_JAVA=INFO LOG_LEVEL_DOTNET=Information LOG_LEVEL_PY=info npm run dev",
 -    "install:all": "npm --prefix services/web install && pip install -e services/reporting-svc && pip install -e services/notifications-svc"
@@ -143,7 +143,7 @@ index 0baf6c1..abf18f1 100644
    },
    "devDependencies": {
 +    "@playwright/test": "^1.49.1",
-     "concurrently": "^9.1.0"
+     "concurrently": "^10.0.5"
    }
  }
 diff --git a/playwright.config.ts b/playwright.config.ts

@@ -556,16 +556,16 @@ index 0000000..3befbbe
 +    #endregion
 +}
 diff --git a/services/reporting-svc/pyproject.toml b/services/reporting-svc/pyproject.toml
-index d93c870..29ffedf 100644
+index cabeaaa..da0b06c 100644
 --- a/services/reporting-svc/pyproject.toml
 +++ b/services/reporting-svc/pyproject.toml
 @@ -18,5 +18,7 @@ include = ["app*"]
  dev = [
-     "pytest==9.0.3",
-     "pytest-asyncio==1.3.0",
+     "pytest==9.1.1",
+     "pytest-asyncio==1.4.0",
 +    "pytest-mock==3.14.0",
 +    "respx==0.22.0",
-     "ruff==0.15.13",
+     "ruff==0.16.3",
  ]
 diff --git a/services/reporting-svc/tests/test_csv_import.py b/services/reporting-svc/tests/test_csv_import.py
 new file mode 100644
