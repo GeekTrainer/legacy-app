@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: acc-course-bot <acc-course-bot@users.noreply.github.com>
 Date: Mon, 17 Aug 2026 09:14:38 -0700
-Subject: [PATCH 1/1] feat(hooks): add lifecycle test-router hook + hooks.json
+Subject: [PATCH] feat(hooks): add lifecycle test-router hook + hooks.json
  (module 04)
 
 ---

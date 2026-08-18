@@ -103,7 +103,7 @@ jobs:
           node-version: '22'
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0'
+          dotnet-version: '10.0'
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -111,11 +111,6 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '21'
-      - name: Provision Java 11 (audit-svc / auth-svc)
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '11'
       - name: Ensure base commit present
         run: git fetch --no-tags origin "$(node -e "console.log(require('./course-build/manifest.json').base.sha)")" || true
       - name: Configure git identity (for git am)
