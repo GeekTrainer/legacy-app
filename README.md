@@ -115,3 +115,23 @@ See [`exercises.md`](exercises.md) for the full exercise list.
 ## Course exercises
 
 See [`exercises.md`](exercises.md). Each exercise is **atomic** — completing one is not a prerequisite for another. Exercises cover all five stacks (Astro, .NET, modern Java, Python, legacy Java) so learners can pick what's most useful to them.
+
+## License
+
+This project is licensed under the terms of the MIT license. See [LICENSE](LICENSE) for the full text.
+
+## Contributing
+
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for how to set up the polyglot devcontainer, run the tests, and open a pull request.
+
+## Code of Conduct
+
+This project has adopted a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold it.
+
+## Support
+
+Looking for help? See [SUPPORT.md](SUPPORT.md) for how to file issues and get assistance.
+
+## Security
+
+To report a security vulnerability, please follow the process described in [SECURITY.md](SECURITY.md). Please do not report security issues through public GitHub issues.
