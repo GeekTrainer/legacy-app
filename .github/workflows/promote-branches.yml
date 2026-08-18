@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production-branches   # configure required reviewers here for the approval gate
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: actions/setup-node@v4

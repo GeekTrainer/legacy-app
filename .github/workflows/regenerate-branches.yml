@@ -65,13 +65,13 @@ jobs:
       ACC_MODULE_RUNNER_CMD: ${{ vars.ACC_MODULE_RUNNER_CMD }}
     steps:
       - name: Checkout legacy-app
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
           path: legacy-app
 
       - name: Checkout ACC (public, anonymous via github.token)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ${{ env.ACC_REPO }}
           ref: ${{ github.event.inputs.acc_sha }}   # blank -> default branch (main)
@@ -350,7 +350,7 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Open regen PR (fallback to compare URL)
