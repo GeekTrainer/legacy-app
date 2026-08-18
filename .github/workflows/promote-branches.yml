@@ -72,13 +72,18 @@ jobs:
 
       - name: Assemble atomic refspecs (aliases + immutable tags)
         id: refs
+        env:
+          # Pass step outputs / inputs through the env block so GitHub sets them
+          # verbatim — never interpolate JSON into the shell script, where the
+          # quotes get stripped and JSON.parse fails.
+          BRANCHES: ${{ steps.build.outputs.branches }}
+          VERSION: ${{ steps.build.outputs.version }}
+          DID: ${{ steps.build.outputs.dispatch_id }}
+          FROM: ${{ github.event.inputs.from_module }}
         run: |
           set -euo pipefail
-          VERSION="${{ steps.build.outputs.version }}"
-          DID="${{ steps.build.outputs.dispatch_id }}"
-          FROM="${{ github.event.inputs.from_module }}"
           REFSPECS=()
-          for start in $(B="${{ steps.build.outputs.branches }}" node -e "console.log(JSON.parse(process.env.B).join(' '))"); do
+          for start in $(node -e "console.log(JSON.parse(process.env.BRANCHES).join(' '))"); do
             # start = start-of-module-NN ; module = NN-1
             num="${start##*-}"; num="${num#0}"; mod=$(( num - 1 ))
             if [ -n "$FROM" ] && [ "$mod" -lt "$FROM" ]; then
