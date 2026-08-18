@@ -15,6 +15,6 @@
     "install:all": "npm --prefix services/web install && pip install -e services/reporting-svc && pip install -e services/notifications-svc"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "concurrently": "^10.0.5"
   }
 }
